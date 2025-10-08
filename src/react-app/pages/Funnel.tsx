@@ -114,28 +114,33 @@ export default function Funnel() {
 
   const saveFunnelResponse = useCallback(async (dataToSave: Record<string, any>, step: number, completed: boolean = false) => {
     try {
-      const payload = {
-        id: funnelId, // Pass existing funnelId if available
-        user_id: userId,
-        step_data: dataToSave,
-        current_step: step,
-        completed: completed,
-      };
-
       let response;
       if (funnelId) {
         // Update existing funnel response
+        const updatePayload = {
+          user_id: userId,
+          step_data: dataToSave,
+          current_step: step,
+          completed: completed,
+          updated_at: new Date().toISOString(), // Explicitly set updated_at for updates
+        };
         response = await supabase
           .from('funnel_responses')
-          .update(payload)
+          .update(updatePayload)
           .eq('id', funnelId)
           .select()
           .single();
       } else {
         // Insert new funnel response
+        const insertPayload = {
+          user_id: userId,
+          step_data: dataToSave,
+          current_step: step,
+          completed: completed,
+        };
         response = await supabase
           .from('funnel_responses')
-          .insert(payload)
+          .insert(insertPayload) // id is not included, so default will be used
           .select()
           .single();
       }
