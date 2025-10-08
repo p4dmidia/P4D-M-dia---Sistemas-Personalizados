@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import FunnelProgressBar from '@/react-app/components/FunnelProgressBar';
 import { FunnelResponse } from '@/shared/types';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client'; // Import Supabase client
+import { supabase } from '@/integrations/supabase/browserClient'; // Changed import
 
 // Define the structure for each funnel step
 interface FunnelStep {
@@ -92,6 +92,8 @@ export default function Funnel() {
   const [funnelId, setFunnelId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
+
+  const currentStep = funnelSteps[currentStepIndex]; // Define currentStep here
 
   useEffect(() => {
     const getSession = async () => {

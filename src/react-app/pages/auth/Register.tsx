@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { supabase } from '@/integrations/supabase/client'; // Import Supabase client
+import { supabase } from '@/integrations/supabase/browserClient'; // Changed import
 
 export default function Register() {
   const [name, setName] = useState('');

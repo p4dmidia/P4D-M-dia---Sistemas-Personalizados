@@ -1,18 +1,24 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { FunnelResponseSchema } from '@/shared/types';
-import { supabase } from '@/integrations/supabase/client'; // Import Supabase client
 import { z } from 'zod';
+import { SupabaseClient } from '@supabase/supabase-js'; // Import SupabaseClient type
 
 type Bindings = {
-  // DB: D1Database; // No longer needed for Supabase
-  JWT_SECRET: string; // Still needed if Hono JWT is used for other purposes
+  JWT_SECRET: string;
+  SUPABASE_URL: string; // Add these to Bindings
+  SUPABASE_ANON_KEY: string; // Add these to Bindings
 };
 
-const funnel = new Hono<{ Bindings: Bindings }>();
+type Variables = {
+  supabase: SupabaseClient; // Define supabase in Variables
+};
+
+const funnel = new Hono<{ Bindings: Bindings, Variables: Variables }>();
 
 // Middleware to get user from Supabase session if available
 funnel.use('*', async (c, next) => {
+  const supabase = c.get('supabase'); // Get Supabase client from context
   const authHeader = c.req.header('Authorization');
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.split(' ')[1];
@@ -37,6 +43,7 @@ funnel.post(
   async (c) => {
     const { step_data, current_step, completed, funnel_id } = c.req.valid('json');
     const userIdFromContext = c.get('userId'); // Get user ID from middleware if authenticated
+    const supabase = c.get('supabase'); // Get Supabase client from context
 
     const actualUserId = userIdFromContext || null; // Prioritize authenticated user, otherwise null for anonymous
 
@@ -126,6 +133,7 @@ funnel.post(
 funnel.get('/latest', async (c) => {
   const funnelId = c.req.query('funnel_id');
   const userIdFromContext = c.get('userId'); // Get user ID from middleware if authenticated
+  const supabase = c.get('supabase'); // Get Supabase client from context
 
   if (!userIdFromContext && !funnelId) {
     return c.json({ error: 'User ID or Funnel ID is required' }, 400);
