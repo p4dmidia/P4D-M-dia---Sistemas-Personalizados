@@ -34,7 +34,7 @@ funnel.use('*', async (c, next) => {
 funnel.post(
   '/save',
   zValidator('json', FunnelResponseSchema.pick({ step_data: true, current_step: true, completed: true, user_id: true }).partial().extend({
-    funnel_id: z.string().uuid().optional(), // Allow passing existing funnel ID
+    funnel_id: z.string().uuid().nullable().optional(), // AGORA PERMITE NULL
   })),
   async (c) => {
     const { step_data, current_step, completed, user_id, funnel_id } = c.req.valid('json');
