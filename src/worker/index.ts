@@ -4,7 +4,7 @@ import funnel from "./routes/funnel";
 
 // Extend the Env interface to include D1 and JWT_SECRET
 type Bindings = {
-  DB: D1Database;
+  // DB: D1Database; // D1 is no longer used
   JWT_SECRET: string; // Make sure to set this in your .dev.vars and Cloudflare Workers environment
 };
 

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { supabase } from '@/integrations/supabase/client'; // Import Supabase client
 
 export default function Register() {
   const [name, setName] = useState('');
@@ -15,21 +16,22 @@ export default function Register() {
     e.preventDefault();
     setLoading(true);
     try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            first_name: name, // Pass name to profile creation trigger
+          },
         },
-        body: JSON.stringify({ name, email, password }),
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        toast.success('Cadastro realizado com sucesso! Faça login para continuar.');
-        navigate('/login');
-      } else {
-        toast.error(data.error || 'Erro ao cadastrar. Tente novamente.');
+      if (error) {
+        console.error('Supabase registration error:', error);
+        toast.error(error.message || 'Erro ao cadastrar. Tente novamente.');
+      } else if (data.user) {
+        toast.success('Cadastro realizado com sucesso! Por favor, verifique seu email para ativar sua conta.');
+        navigate('/login'); // Redirect to login after successful registration
       }
     } catch (error) {
       console.error('Registration error:', error);
@@ -83,7 +85,7 @@ export default function Register() {
               type="email"
               autoComplete="email"
               required
-              className="appearance-none rounded-md relative block w-full px-3 py-3 border border-gray-600 placeholder-gray-500 text-white bg-gray-800 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+              className="appearance-none rounded-md relative block w-full px-3 py-3 border border-gray-600 placeholder-gray-500 text-white bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
               placeholder="Endereço de Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -99,7 +101,7 @@ export default function Register() {
               type="password"
               autoComplete="new-password"
               required
-              className="appearance-none rounded-md relative block w-full px-3 py-3 border border-gray-600 placeholder-gray-500 text-white bg-gray-800 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+              className="appearance-none rounded-md relative block w-full px-3 py-3 border border-gray-600 placeholder-gray-500 text-white bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
               placeholder="Senha"
               value={password}
               onChange={(e) => setPassword(e.target.value)}

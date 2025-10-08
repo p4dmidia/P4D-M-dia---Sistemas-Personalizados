@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import FunnelProgressBar from '@/react-app/components/FunnelProgressBar';
 import { FunnelResponse } from '@/shared/types';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client'; // Import Supabase client
 
 // Define the structure for each funnel step
 interface FunnelStep {
@@ -85,59 +86,64 @@ const funnelSteps: FunnelStep[] = [
 ];
 
 export default function Funnel() {
-  console.log("Funnel component rendering..."); // Log para depuração
   const navigate = useNavigate();
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [funnelId, setFunnelId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const userId = localStorage.getItem('userId'); // Get user ID if logged in
+  const [userId, setUserId] = useState<string | null>(null);
 
-  const currentStep = funnelSteps[currentStepIndex];
+  useEffect(() => {
+    const getSession = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUserId(user?.id || null);
+    };
+    getSession();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserId(session?.user?.id || null);
+    });
+
+    return () => {
+      authListener.unsubscribe();
+    };
+  }, []);
 
   const saveFunnelResponse = useCallback(async (dataToSave: Record<string, any>, step: number, completed: boolean = false) => {
     try {
-      const token = localStorage.getItem('token');
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
+      const payload = {
+        id: funnelId, // Pass existing funnelId if available
+        user_id: userId,
+        step_data: dataToSave,
+        current_step: step,
+        completed: completed,
       };
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+
+      let response;
+      if (funnelId) {
+        // Update existing funnel response
+        response = await supabase
+          .from('funnel_responses')
+          .update(payload)
+          .eq('id', funnelId)
+          .select()
+          .single();
+      } else {
+        // Insert new funnel response
+        response = await supabase
+          .from('funnel_responses')
+          .insert(payload)
+          .select()
+          .single();
       }
 
-      const response = await fetch('/api/funnel/save', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          funnel_id: funnelId,
-          user_id: userId,
-          step_data: dataToSave,
-          current_step: step,
-          completed: completed,
-        }),
-      });
-
-      if (!response.ok) {
-        let errorDetail = `Status: ${response.status} ${response.statusText}`;
-        try {
-          const errorJson = await response.json();
-          if (typeof errorJson.error === 'string') {
-            errorDetail = errorJson.error;
-          } else if (errorJson.error && typeof errorJson.error === 'object') {
-            errorDetail = JSON.stringify(errorJson.error);
-          } else {
-            errorDetail = JSON.stringify(errorJson);
-          }
-        } catch (e) {
-          errorDetail = await response.text(); // Fallback para texto puro se não for JSON
-        }
-        console.error('Server error on funnel save:', errorDetail);
-        toast.error(`Erro ao salvar progresso: ${errorDetail}`);
+      if (response.error) {
+        console.error('Supabase save funnel error:', response.error);
+        toast.error(`Erro ao salvar progresso: ${response.error.message}`);
         return;
       }
 
-      const result = await response.json();
-      setFunnelId(result.funnelId);
+      setFunnelId(response.data.id);
       // toast.success('Progresso salvo automaticamente!'); // Too many toasts
     } catch (error) {
       console.error('Autosave failed:', error);
@@ -150,56 +156,42 @@ export default function Funnel() {
     const loadFunnelData = async () => {
       setLoading(true);
       try {
-        const token = localStorage.getItem('token');
-        const headers: HeadersInit = {};
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
+        let funnelResponse: FunnelResponse | null = null;
+
+        if (funnelId) {
+          const { data, error } = await supabase
+            .from('funnel_responses')
+            .select('*')
+            .eq('id', funnelId)
+            .single();
+          if (error && error.code !== 'PGRST116') throw error;
+          funnelResponse = data;
+        } else if (userId) {
+          const { data, error } = await supabase
+            .from('funnel_responses')
+            .select('*')
+            .eq('user_id', userId)
+            .eq('completed', false)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+          if (error && error.code !== 'PGRST116') throw error;
+          funnelResponse = data;
         }
 
-        const queryParams = funnelId ? `?funnel_id=${funnelId}` : (userId ? `?user_id=${userId}` : '');
-        
-        // Se não há funnelId e nem userId, é um início anônimo.
-        // Não precisa buscar, apenas define loading como false e prossegue com o estado padrão.
-        if (!queryParams) {
-          setFunnelId(null); // Garante que funnelId é null para um novo funil anônimo
-          setFormData({}); // Começa com dados de formulário vazios
-          setCurrentStepIndex(0); // Começa na primeira etapa
-          setLoading(false);
-          return;
-        }
-
-        const response = await fetch(`/api/funnel/latest${queryParams}`, { headers });
-
-        if (!response.ok) {
-          let errorDetail = `Status: ${response.status} ${response.statusText}`;
-          try {
-            const errorJson = await response.json();
-            if (typeof errorJson.error === 'string') {
-              errorDetail = errorJson.error;
-            } else if (errorJson.error && typeof errorJson.error === 'object') {
-              errorDetail = JSON.stringify(errorJson.error);
-            } else {
-              errorDetail = JSON.stringify(errorJson);
-            }
-          } catch (e) {
-            errorDetail = await response.text(); // Fallback para texto puro se não for JSON
-          }
-          console.error('Server error on funnel load:', errorDetail);
-          toast.error(`Erro ao carregar progresso do funil: ${errorDetail}`);
-          setFunnelId(null); // Reseta funnelId para permitir nova criação
+        if (funnelResponse) {
+          setFunnelId(funnelResponse.id!);
+          setFormData(funnelResponse.step_data);
+          setCurrentStepIndex(funnelResponse.current_step);
+        } else {
+          setFunnelId(null);
           setFormData({});
           setCurrentStepIndex(0);
-          return; // Sai após mostrar o erro
         }
-
-        const data: FunnelResponse = await response.json();
-        setFunnelId(data.id!);
-        setFormData(data.step_data);
-        setCurrentStepIndex(data.current_step);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error loading funnel data:', error);
-        toast.error('Erro de conexão ao carregar progresso.');
-        setFunnelId(null); // Reseta funnelId em caso de erro de conexão
+        toast.error(`Erro ao carregar progresso: ${error.message || 'Erro de conexão.'}`);
+        setFunnelId(null);
         setFormData({});
         setCurrentStepIndex(0);
       } finally {
@@ -268,7 +260,6 @@ export default function Funnel() {
     );
   }
 
-  // Adiciona uma verificação para currentStep para evitar crashes se for undefined
   if (!currentStep) {
     console.error("Funnel: currentStep is undefined. currentStepIndex:", currentStepIndex);
     return (

@@ -23,8 +23,5 @@
       "binding": "R2_BUCKET",
       "bucket_name": "01999c48-fe6b-794e-a918-9008df0b13f0"
     }
-  ],
-  "vars": {
-    "JWT_SECRET": "your_super_secret_jwt_key_here"
-  }
+  ]
 }

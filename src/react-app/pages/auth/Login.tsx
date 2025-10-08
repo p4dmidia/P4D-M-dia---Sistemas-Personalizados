@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { supabase } from '@/integrations/supabase/client'; // Import Supabase client
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -14,24 +15,22 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('userId', data.userId);
-        localStorage.setItem('userRole', data.role);
+      if (error) {
+        console.error('Supabase login error:', error);
+        toast.error(error.message || 'Credenciais inválidas. Tente novamente.');
+      } else if (data.session) {
+        // Supabase automatically handles session storage (localStorage by default)
+        // We can store user ID and role if needed, but Supabase client can retrieve it
+        localStorage.setItem('userId', data.user.id);
+        // You might fetch user role from profiles table if needed, or store it in metadata
+        // For now, we'll assume a default role or fetch it later.
         toast.success('Login realizado com sucesso!');
-        navigate('/dashboard'); // Redirect to client dashboard or admin panel
-      } else {
-        toast.error(data.error || 'Credenciais inválidas. Tente novamente.');
+        navigate('/dashboard'); // Redirect to client dashboard
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -85,7 +84,7 @@ export default function Login() {
               type="password"
               autoComplete="current-password"
               required
-              className="appearance-none rounded-md relative block w-full px-3 py-3 border border-gray-600 placeholder-gray-500 text-white bg-gray-800 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+              className="appearance-none rounded-md relative block w-full px-3 py-3 border border-gray-600 placeholder-gray-500 text-white bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
               placeholder="Senha"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
