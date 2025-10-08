@@ -3,6 +3,7 @@ import { zValidator } from '@hono/zod-validator';
 import { FunnelResponseSchema } from '@/shared/types';
 import { v4 as uuidv4 } from 'uuid';
 import { verify } from 'hono/jwt';
+import { z } from 'zod'; // Import Zod for extending schema
 
 type Bindings = {
   DB: D1Database;
@@ -61,12 +62,19 @@ funnel.post(
       }
 
       if (existingFunnel) {
+        // Safely parse existing step_data, defaulting to an empty object if null or empty string
+        const parsedExistingStepData = existingFunnel.step_data 
+          ? (typeof existingFunnel.step_data === 'string' ? JSON.parse(existingFunnel.step_data) : existingFunnel.step_data)
+          : {};
+        
+        const mergedStepData = { ...parsedExistingStepData, ...step_data };
+
         // Update existing funnel response
         await c.env.DB.prepare(
           'UPDATE funnel_responses SET step_data = ?, current_step = ?, completed = ?, user_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
         )
           .bind(
-            JSON.stringify({ ...JSON.parse(existingFunnel.step_data), ...step_data }),
+            JSON.stringify(mergedStepData),
             current_step !== undefined ? current_step : existingFunnel.current_step,
             completed !== undefined ? completed : existingFunnel.completed,
             actualUserId,
@@ -122,7 +130,12 @@ funnel.get('/latest', async (c) => {
       return c.json({ message: 'No funnel response found' }, 404);
     }
 
-    return c.json({ ...funnelResponse, step_data: JSON.parse(funnelResponse.step_data as string) }, 200);
+    // Safely parse step_data when retrieving
+    const parsedStepData = funnelResponse.step_data 
+      ? (typeof funnelResponse.step_data === 'string' ? JSON.parse(funnelResponse.step_data) : funnelResponse.step_data)
+      : {};
+
+    return c.json({ ...funnelResponse, step_data: parsedStepData }, 200);
   } catch (error) {
     console.error('Error fetching funnel response:', error);
     return c.json({ error: 'Failed to fetch funnel response' }, 500);
