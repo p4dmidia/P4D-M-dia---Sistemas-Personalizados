@@ -121,7 +121,13 @@ export default function Funnel() {
         let errorDetail = `Status: ${response.status} ${response.statusText}`;
         try {
           const errorJson = await response.json();
-          errorDetail = errorJson.error || JSON.stringify(errorJson);
+          if (typeof errorJson.error === 'string') {
+            errorDetail = errorJson.error;
+          } else if (errorJson.error && typeof errorJson.error === 'object') {
+            errorDetail = JSON.stringify(errorJson.error);
+          } else {
+            errorDetail = JSON.stringify(errorJson);
+          }
         } catch (e) {
           errorDetail = await response.text(); // Fallback para texto puro se não for JSON
         }
@@ -168,7 +174,13 @@ export default function Funnel() {
           let errorDetail = `Status: ${response.status} ${response.statusText}`;
           try {
             const errorJson = await response.json();
-            errorDetail = errorJson.error || JSON.stringify(errorJson);
+            if (typeof errorJson.error === 'string') {
+              errorDetail = errorJson.error;
+            } else if (errorJson.error && typeof errorJson.error === 'object') {
+              errorDetail = JSON.stringify(errorJson.error);
+            } else {
+              errorDetail = JSON.stringify(errorJson);
+            }
           } catch (e) {
             errorDetail = await response.text(); // Fallback para texto puro se não for JSON
           }
