@@ -1,6 +1,9 @@
 import { TrendingUp, Users, DollarSign, Target, BarChart3, MessageSquare } from 'lucide-react';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
 export default function AssessoriaMarketing() {
+  const navigate = useNavigate(); // Initialize useNavigate
+
   const services = [
     {
       icon: <Target className="w-6 h-6" />,
@@ -46,6 +49,10 @@ export default function AssessoriaMarketing() {
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
     }
+  };
+
+  const handleStartFunnel = () => {
+    navigate('/funnel'); // Navigate to the funnel page
   };
 
   return (
@@ -129,7 +136,7 @@ export default function AssessoriaMarketing() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
-              onClick={() => scrollToSection('contato')}
+              onClick={handleStartFunnel} // Connect to funnel
               className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105"
             >
               Quero aumentar minhas vendas

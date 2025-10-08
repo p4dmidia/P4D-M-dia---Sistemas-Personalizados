@@ -1,6 +1,9 @@
 import { Check, Star } from 'lucide-react';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
 export default function Planos() {
+  const navigate = useNavigate(); // Initialize useNavigate
+
   const plans = [
     {
       name: '🟦 Site Institucional',
@@ -100,6 +103,10 @@ export default function Planos() {
     }
   };
 
+  const handleStartFunnel = () => {
+    navigate('/funnel'); // Navigate to the funnel page
+  };
+
   return (
     <section id="planos" className="py-20 bg-gradient-to-b from-black to-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -160,7 +167,7 @@ export default function Planos() {
 
               {/* CTA Button */}
               <button
-                onClick={() => scrollToSection('contato')}
+                onClick={handleStartFunnel} // Connect to funnel
                 className={`w-full bg-gradient-to-r ${plan.color} hover:opacity-90 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 ${
                   plan.popular ? 'shadow-lg hover:shadow-blue-500/25' : ''
                 }`}

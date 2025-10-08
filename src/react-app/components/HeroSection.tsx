@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { ArrowRight, Play } from 'lucide-react';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
 export default function HeroSection() {
   const [particles, setParticles] = useState<Array<{ id: number; x: number; y: number; size: number }>>([]);
+  const navigate = useNavigate(); // Initialize useNavigate
 
   useEffect(() => {
     // Generate floating particles
@@ -20,6 +22,10 @@ export default function HeroSection() {
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
     }
+  };
+
+  const handleStartFunnel = () => {
+    navigate('/funnel'); // Navigate to the funnel page
   };
 
   return (
@@ -98,7 +104,7 @@ export default function HeroSection() {
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
             <button
-              onClick={() => scrollToSection('como-funciona')}
+              onClick={handleStartFunnel} // Connect to funnel
               className="group bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-4 px-8 rounded-full transition-all duration-300 transform hover:scale-105 shadow-2xl hover:shadow-blue-500/25 flex items-center gap-2"
             >
               Quero meu sistema agora

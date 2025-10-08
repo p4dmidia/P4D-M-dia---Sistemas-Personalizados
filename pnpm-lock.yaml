@@ -11,6 +11,9 @@ importers:
       '@hono/zod-validator':
         specifier: ^0.5.0
         version: 0.5.0(hono@4.7.7)(zod@3.25.76)
+      bcryptjs:
+        specifier: ^3.0.2
+        version: 3.0.2
       hono:
         specifier: 4.7.7
         version: 4.7.7
@@ -23,6 +26,9 @@ importers:
       react-dom:
         specifier: 19.0.0
         version: 19.0.0(react@19.0.0)
+      react-hot-toast:
+        specifier: ^2.6.0
+        version: 2.6.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       react-router:
         specifier: ^7.5.3
         version: 7.9.4(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
@@ -1030,6 +1036,10 @@ packages:
     resolution: {integrity: sha512-GM9c0cWWR8Ga7//Ves/9KRgTS8nLausCkP3CGiFLrnwA2CDUluXgaQqvrULoR2Ujrd/mz/lkX87F5BHFsNr5sQ==}
     hasBin: true
 
+  bcryptjs@3.0.2:
+    resolution: {integrity: sha512-k38b3XOZKv60C4E2hVsXTolJWfkGRMbILBIe2IBITXciy5bOsTKot5kDrf3ZfufQtQOUN5mXceUEpU1rTl9Uog==}
+    hasBin: true
+
   binary-extensions@2.3.0:
     resolution: {integrity: sha512-Ceh+7ox5qe7LJuLHoY0feh3pHuUDHAcRUeyL2VYghZwfpkNIy/+8Ocg0a3UuSoYzavmylwuLWQOf3hl0jjMMIw==}
     engines: {node: '>=8'}
@@ -1318,6 +1328,11 @@ packages:
   globals@15.15.0:
     resolution: {integrity: sha512-7ACyT3wmyp3I61S4fG682L0VA2RGD9otkqGJIwNUMF1SWUombIIk+af1unuDYgMm082aHYwD+mzJvv9Iu8dsgg==}
     engines: {node: '>=18'}
+
+  goober@2.1.18:
+    resolution: {integrity: sha512-2vFqsaDVIT9Gz7N6kAL++pLpp41l3PfDuusHcjnGLfR6+huZkl6ziX+zgVC3ZxpqWhzH6pyDdGrCeDhMIvwaxw==}
+    peerDependencies:
+      csstype: ^3.0.10
 
   graphemer@1.4.0:
     resolution: {integrity: sha512-EtKwoO6kxCL9WO5xipiHTZlSzBm7WLT627TqC/uVRd0HKmq8NXyebnNYxDoBi7wt8eTWrUrKXCOVaFq9x1kgag==}
@@ -1631,6 +1646,13 @@ packages:
     resolution: {integrity: sha512-4GV5sHFG0e/0AD4X+ySy6UJd3jVl1iNsNHdpad0qhABJ11twS3TTBnseqsKurKcsNqCEFeGL3uLpVChpIO3QfQ==}
     peerDependencies:
       react: ^19.0.0
+
+  react-hot-toast@2.6.0:
+    resolution: {integrity: sha512-bH+2EBMZ4sdyou/DPrfgIouFpcRLCJ+HoCA32UoAYHn6T3Ur5yfcDCeSr5mwldl6pFOsiocmrXMuoCJ1vV8bWg==}
+    engines: {node: '>=10'}
+    peerDependencies:
+      react: '>=16'
+      react-dom: '>=16'
 
   react-refresh@0.17.0:
     resolution: {integrity: sha512-z6F7K9bV85EfseRCp2bzrpyQ0Gkw1uLoCel9XBVWPg/TjRj94SkJzUTGfOa4bs7iJvBWtQG0Wq7wnI0syw3EBQ==}
@@ -2706,6 +2728,8 @@ snapshots:
 
   baseline-browser-mapping@2.8.14: {}
 
+  bcryptjs@3.0.2: {}
+
   binary-extensions@2.3.0: {}
 
   blake3-wasm@2.1.5: {}
@@ -3035,6 +3059,10 @@ snapshots:
 
   globals@15.15.0: {}
 
+  goober@2.1.18(csstype@3.1.3):
+    dependencies:
+      csstype: 3.1.3
+
   graphemer@1.4.0: {}
 
   has-flag@4.0.0: {}
@@ -3287,6 +3315,13 @@ snapshots:
     dependencies:
       react: 19.0.0
       scheduler: 0.25.0
+
+  react-hot-toast@2.6.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0):
+    dependencies:
+      csstype: 3.1.3
+      goober: 2.1.18(csstype@3.1.3)
+      react: 19.0.0
+      react-dom: 19.0.0(react@19.0.0)
 
   react-refresh@0.17.0: {}
 

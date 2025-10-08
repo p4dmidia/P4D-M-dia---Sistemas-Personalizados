@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Menu, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const navigate = useNavigate(); // Initialize useNavigate
 
   useEffect(() => {
     const handleScroll = () => {
@@ -19,6 +21,11 @@ export default function Header() {
       element.scrollIntoView({ behavior: 'smooth' });
       setIsMenuOpen(false);
     }
+  };
+
+  const handleStartFunnel = () => {
+    navigate('/funnel'); // Navigate to the funnel page
+    setIsMenuOpen(false);
   };
 
   return (
@@ -59,7 +66,7 @@ export default function Header() {
           {/* CTA Button */}
           <div className="hidden md:block">
             <button
-              onClick={() => scrollToSection('contato')}
+              onClick={handleStartFunnel} // Connect to funnel
               className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-2 px-6 rounded-full transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-blue-500/25"
             >
               Solicitar Demonstração
@@ -98,7 +105,7 @@ export default function Header() {
                 </button>
               ))}
               <button
-                onClick={() => scrollToSection('contato')}
+                onClick={handleStartFunnel} // Connect to funnel
                 className="w-full mt-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold py-2 px-4 rounded-full"
               >
                 Solicitar Demonstração

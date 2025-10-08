@@ -1,6 +1,9 @@
 import { Rocket, Target, DollarSign, Headphones, Zap } from 'lucide-react';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
 export default function Vantagens() {
+  const navigate = useNavigate(); // Initialize useNavigate
+
   const advantages = [
     {
       icon: <Target className="w-8 h-8" />,
@@ -39,6 +42,10 @@ export default function Vantagens() {
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
     }
+  };
+
+  const handleStartFunnel = () => {
+    navigate('/funnel'); // Navigate to the funnel page
   };
 
   return (
@@ -94,7 +101,7 @@ export default function Vantagens() {
             Fale com um de nossos consultores e descubra como podemos transformar sua empresa
           </p>
           <button
-            onClick={() => scrollToSection('contato')}
+            onClick={handleStartFunnel} // Connect to funnel
             className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-4 px-8 rounded-full transition-all duration-300 transform hover:scale-105 shadow-2xl hover:shadow-blue-500/25"
           >
             Fale com um Consultor Agora

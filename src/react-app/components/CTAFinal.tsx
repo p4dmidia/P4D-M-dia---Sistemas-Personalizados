@@ -1,11 +1,18 @@
 import { ArrowRight, Sparkles } from 'lucide-react';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
 export default function CTAFinal() {
+  const navigate = useNavigate(); // Initialize useNavigate
+
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
     }
+  };
+
+  const handleStartFunnel = () => {
+    navigate('/funnel'); // Navigate to the funnel page
   };
 
   return (
@@ -53,7 +60,7 @@ export default function CTAFinal() {
         {/* Main CTA */}
         <div className="mb-12 flex flex-col sm:flex-row gap-4 justify-center">
           <button
-            onClick={() => scrollToSection('contato')}
+            onClick={handleStartFunnel} // Connect to funnel
             className="group bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500 hover:from-purple-600 hover:via-blue-600 hover:to-cyan-600 text-white font-bold py-6 px-12 rounded-full text-xl transition-all duration-300 transform hover:scale-105 shadow-2xl hover:shadow-purple-500/25 flex items-center gap-3 mx-auto"
           >
             Solicitar meu sistema agora
