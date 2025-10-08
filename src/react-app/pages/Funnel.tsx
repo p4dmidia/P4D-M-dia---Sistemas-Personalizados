@@ -85,6 +85,7 @@ const funnelSteps: FunnelStep[] = [
 ];
 
 export default function Funnel() {
+  console.log("Funnel component rendering..."); // Log para depuração
   const navigate = useNavigate();
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [formData, setFormData] = useState<Record<string, any>>({});
@@ -116,16 +117,25 @@ export default function Funnel() {
         }),
       });
 
-      const result = await response.json();
-      if (response.ok) {
-        setFunnelId(result.funnelId);
-        // toast.success('Progresso salvo automaticamente!'); // Too many toasts
-      } else {
-        toast.error(result.error || 'Erro ao salvar progresso.');
+      if (!response.ok) {
+        let errorDetail = `Status: ${response.status} ${response.statusText}`;
+        try {
+          const errorJson = await response.json();
+          errorDetail = errorJson.error || JSON.stringify(errorJson);
+        } catch (e) {
+          errorDetail = await response.text(); // Fallback para texto puro se não for JSON
+        }
+        console.error('Server error on funnel save:', errorDetail);
+        toast.error(`Erro ao salvar progresso: ${errorDetail}`);
+        return;
       }
+
+      const result = await response.json();
+      setFunnelId(result.funnelId);
+      // toast.success('Progresso salvo automaticamente!'); // Too many toasts
     } catch (error) {
       console.error('Autosave failed:', error);
-      // toast.error('Erro de conexão ao salvar progresso.');
+      toast.error('Erro de conexão ao salvar progresso.');
     }
   }, [funnelId, userId]);
 
@@ -141,26 +151,45 @@ export default function Funnel() {
         }
 
         const queryParams = funnelId ? `?funnel_id=${funnelId}` : (userId ? `?user_id=${userId}` : '');
+        
+        // Se não há funnelId e nem userId, é um início anônimo.
+        // Não precisa buscar, apenas define loading como false e prossegue com o estado padrão.
         if (!queryParams) {
+          setFunnelId(null); // Garante que funnelId é null para um novo funil anônimo
+          setFormData({}); // Começa com dados de formulário vazios
+          setCurrentStepIndex(0); // Começa na primeira etapa
           setLoading(false);
           return;
         }
 
         const response = await fetch(`/api/funnel/latest${queryParams}`, { headers });
-        if (response.ok) {
-          const data: FunnelResponse = await response.json();
-          setFunnelId(data.id!);
-          setFormData(data.step_data);
-          setCurrentStepIndex(data.current_step);
-        } else if (response.status === 404) {
-          // No existing funnel, start fresh
-          console.log('No existing funnel found, starting new.');
-        } else {
-          toast.error('Erro ao carregar progresso do funil.');
+
+        if (!response.ok) {
+          let errorDetail = `Status: ${response.status} ${response.statusText}`;
+          try {
+            const errorJson = await response.json();
+            errorDetail = errorJson.error || JSON.stringify(errorJson);
+          } catch (e) {
+            errorDetail = await response.text(); // Fallback para texto puro se não for JSON
+          }
+          console.error('Server error on funnel load:', errorDetail);
+          toast.error(`Erro ao carregar progresso do funil: ${errorDetail}`);
+          setFunnelId(null); // Reseta funnelId para permitir nova criação
+          setFormData({});
+          setCurrentStepIndex(0);
+          return; // Sai após mostrar o erro
         }
+
+        const data: FunnelResponse = await response.json();
+        setFunnelId(data.id!);
+        setFormData(data.step_data);
+        setCurrentStepIndex(data.current_step);
       } catch (error) {
         console.error('Error loading funnel data:', error);
         toast.error('Erro de conexão ao carregar progresso.');
+        setFunnelId(null); // Reseta funnelId em caso de erro de conexão
+        setFormData({});
+        setCurrentStepIndex(0);
       } finally {
         setLoading(false);
       }
@@ -223,6 +252,22 @@ export default function Funnel() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black text-white">
         <p className="text-xl">Carregando seu progresso...</p>
+      </div>
+    );
+  }
+
+  // Adiciona uma verificação para currentStep para evitar crashes se for undefined
+  if (!currentStep) {
+    console.error("Funnel: currentStep is undefined. currentStepIndex:", currentStepIndex);
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-black text-white p-4">
+        <p className="text-xl text-red-500 mb-4">Erro ao carregar etapa do funil. Por favor, tente novamente.</p>
+        <button 
+          onClick={() => navigate('/')} 
+          className="px-6 py-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-all duration-200"
+        >
+          Voltar ao Início
+        </button>
       </div>
     );
   }
