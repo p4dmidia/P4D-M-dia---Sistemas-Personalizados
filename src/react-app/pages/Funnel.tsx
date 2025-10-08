@@ -102,12 +102,13 @@ export default function Funnel() {
     };
     getSession();
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+    // Correctly destructure the subscription object
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUserId(session?.user?.id || null);
     });
 
     return () => {
-      authListener.unsubscribe();
+      subscription.unsubscribe(); // Correctly unsubscribe
     };
   }, []);
 
