@@ -143,7 +143,8 @@ export default function FunnelSummary() {
   useEffect(() => {
     const loadExistingFunnel = async () => {
       // Only attempt to load if userId is known and no funnel data is present from location.state
-      if (userId && !funnelId && Object.keys(formData).length === 0) {
+      // and if formData is still empty (meaning it wasn't passed via state)
+      if (userId && Object.keys(formData).length === 0) {
         setLoading(true);
         try {
           const { data: funnelResponse, error } = await supabase
@@ -168,18 +169,19 @@ export default function FunnelSummary() {
         } finally {
           setLoading(false);
         }
-      } else if (!userId && !funnelId && Object.keys(formData).length === 0) {
-        // If no user and no funnel data, still show plans but with generic summary
+      } else if (!userId && Object.keys(formData).length === 0) {
+        // If no user and no funnel data from state, proceed to show plans with generic summary
         setLoading(false);
       } else {
-        setLoading(false); // If data is already present from state, stop loading
+        // If formData is already present from state, or userId is null and formData is not empty, stop loading
+        setLoading(false); 
       }
     };
 
-    if (userId !== null) { // Only run once userId is determined
+    if (userId !== undefined) { // Only run once userId is determined (not null, not undefined)
       loadExistingFunnel();
     }
-  }, [userId, funnelId, formData]); // Depend on userId, funnelId, formData
+  }, [userId]); // Depend only on userId to trigger loading of existing funnel data
 
   // Effect to generate summary and recommend plan
   useEffect(() => {
