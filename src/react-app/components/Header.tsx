@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Menu, X } from 'lucide-react';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
+import { Menu, X, LogIn } from 'lucide-react'; // Importar LogIn icon
+import { useNavigate } from 'react-router-dom';
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const navigate = useNavigate(); // Initialize useNavigate
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -24,7 +24,12 @@ export default function Header() {
   };
 
   const handleStartFunnel = () => {
-    navigate('/funnel'); // Navigate to the funnel page
+    navigate('/funnel');
+    setIsMenuOpen(false);
+  };
+
+  const handleLogin = () => {
+    navigate('/login'); // Navega para a página de login
     setIsMenuOpen(false);
   };
 
@@ -63,10 +68,17 @@ export default function Header() {
             ))}
           </nav>
 
-          {/* CTA Button */}
-          <div className="hidden md:block">
+          {/* CTA Buttons (Desktop) */}
+          <div className="hidden md:flex items-center space-x-4"> {/* Adicionado flex e space-x-4 */}
             <button
-              onClick={handleStartFunnel} // Connect to funnel
+              onClick={handleLogin}
+              className="text-gray-300 hover:text-blue-400 transition-colors duration-200 font-medium flex items-center gap-1"
+            >
+              <LogIn className="w-5 h-5" />
+              Login
+            </button>
+            <button
+              onClick={handleStartFunnel}
               className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-2 px-6 rounded-full transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-blue-500/25"
             >
               Solicitar Demonstração
@@ -105,7 +117,14 @@ export default function Header() {
                 </button>
               ))}
               <button
-                onClick={handleStartFunnel} // Connect to funnel
+                onClick={handleLogin}
+                className="block w-full text-left px-3 py-2 text-gray-300 hover:text-blue-400 transition-colors flex items-center gap-2"
+              >
+                <LogIn className="w-5 h-5" />
+                Login
+              </button>
+              <button
+                onClick={handleStartFunnel}
                 className="w-full mt-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold py-2 px-4 rounded-full"
               >
                 Solicitar Demonstração
