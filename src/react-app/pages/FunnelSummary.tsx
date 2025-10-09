@@ -122,22 +122,32 @@ export default function FunnelSummary() {
     }
   ];
 
-  // Effect to get user ID
+  // Effect to get user ID and redirect if not authenticated
   useEffect(() => {
-    const getSession = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUserId(user?.id || null);
+    const checkAuthAndSetUser = async () => {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error || !user) {
+        toast.error('Você precisa estar logado para ativar um plano.');
+        navigate('/login');
+        return;
+      }
+      setUserId(user.id);
     };
-    getSession();
+    checkAuthAndSetUser();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUserId(session?.user?.id || null);
+      if (session?.user) {
+        setUserId(session.user.id);
+      } else {
+        toast.error('Sua sessão expirou. Por favor, faça login novamente.');
+        navigate('/login');
+      }
     });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [navigate]);
 
   // Effect to load funnel data if not from location.state
   useEffect(() => {
@@ -178,7 +188,7 @@ export default function FunnelSummary() {
       }
     };
 
-    if (userId !== undefined) { // Only run once userId is determined (not null, not undefined)
+    if (userId !== null) { // Only run once userId is determined (not null, not undefined)
       loadExistingFunnel();
     }
   }, [userId]); // Depend only on userId to trigger loading of existing funnel data
@@ -233,12 +243,18 @@ export default function FunnelSummary() {
     toast.loading('Preparando sua assinatura...', { id: 'asaas-checkout' });
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast.error('Você precisa estar logado para ativar um plano.', { id: 'asaas-checkout' });
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      console.log('Frontend: Session data:', session);
+      console.log('Frontend: Session error:', sessionError);
+
+      if (sessionError || !session || !session.access_token) {
+        toast.error('Sua sessão expirou ou não está ativa. Por favor, faça login novamente.', { id: 'asaas-checkout' });
         navigate('/login');
         return;
       }
+
+      console.log('Frontend: Access Token:', session.access_token);
 
       const response = await fetch('/api/asaas/create-subscription', {
         method: 'POST',
@@ -256,7 +272,7 @@ export default function FunnelSummary() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('Failed to create Asaas subscription:', errorData);
+        console.error('Frontend: Failed to create Asaas subscription:', errorData);
         toast.error(errorData.error || 'Erro ao criar assinatura no Asaas.', { id: 'asaas-checkout' });
         setLoading(false);
         return;
@@ -269,7 +285,7 @@ export default function FunnelSummary() {
       window.location.href = checkoutUrl;
 
     } catch (error) {
-      console.error('Error during Asaas subscription creation:', error);
+      console.error('Frontend: Error during Asaas subscription creation:', error);
       toast.error('Erro de conexão ao ativar o plano.', { id: 'asaas-checkout' });
       setLoading(false);
     }
