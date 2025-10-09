@@ -83,6 +83,7 @@ asaas.post(
 
       if (existingProfile?.asaas_customer_id) {
         asaasCustomerId = existingProfile.asaas_customer_id;
+        console.log('ASAAS: Cliente Asaas existente encontrado:', asaasCustomerId);
       } else {
         // Fetch user email and name to create Asaas customer using the ADMIN client
         const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId);
@@ -99,6 +100,9 @@ asaas.post(
         const userEmail = userData.user.email;
         const userName = userData.user.user_metadata.first_name || userEmail?.split('@')[0];
 
+        console.log('ASAAS: Tentando criar cliente Asaas com:', { name: userName, email: userEmail });
+        console.log('ASAAS: Usando ASAAS_API_KEY (primeiros 5 chars):', asaasApiKey.substring(0, 5) + '...');
+
         const asaasCustomerResponse = await fetch('https://api.asaas.com/v3/customers', { // <-- Endpoint da API Asaas
           method: 'POST',
           headers: {
@@ -114,11 +118,12 @@ asaas.post(
 
         if (!asaasCustomerResponse.ok) {
           const errorData = await asaasCustomerResponse.json();
-          console.error('ASAAS: Falha na criação do cliente Asaas:', errorData);
+          console.error('ASAAS: Falha na criação do cliente Asaas. Status:', asaasCustomerResponse.status, 'Status Text:', asaasCustomerResponse.statusText, 'Detalhes:', errorData);
           return c.json({ error: 'Failed to create Asaas customer', details: errorData }, 500);
         }
         const newAsaasCustomer = await asaasCustomerResponse.json();
         asaasCustomerId = newAsaasCustomer.id;
+        console.log('ASAAS: Cliente Asaas criado com sucesso:', asaasCustomerId);
 
         // Update profile with Asaas customer ID using the ANON client (as profiles table has RLS)
         const { error: updateProfileError } = await supabase
@@ -144,6 +149,8 @@ asaas.post(
         // Você pode adicionar mais detalhes como desconto, multa, juros, etc.
       };
 
+      console.log('ASAAS: Tentando criar assinatura Asaas com payload:', subscriptionPayload);
+
       const asaasSubscriptionResponse = await fetch('https://api.asaas.com/v3/subscriptions', { // <-- Endpoint da API Asaas
         method: 'POST',
         headers: {
@@ -155,10 +162,11 @@ asaas.post(
 
       if (!asaasSubscriptionResponse.ok) {
         const errorData = await asaasSubscriptionResponse.json();
-        console.error('ASAAS: Falha na criação da assinatura Asaas:', errorData);
+        console.error('ASAAS: Falha na criação da assinatura Asaas. Status:', asaasSubscriptionResponse.status, 'Status Text:', asaasSubscriptionResponse.statusText, 'Detalhes:', errorData);
         return c.json({ error: 'Failed to create Asaas subscription', details: errorData }, 500);
       }
       const newAsaasSubscription = await asaasSubscriptionResponse.json();
+      console.log('ASAAS: Assinatura Asaas criada com sucesso:', newAsaasSubscription.id);
 
       // 3. Save subscription details to your Supabase 'subscriptions' table using the ANON client
       const { data: newSubscription, error: dbInsertError } = await supabase
@@ -179,6 +187,7 @@ asaas.post(
         console.error('ASAAS: Erro ao salvar assinatura no DB:', dbInsertError);
         return c.json({ error: 'Failed to save subscription details' }, 500);
       }
+      console.log('ASAAS: Assinatura salva no Supabase:', newSubscription.id);
 
       // 4. Get checkout URL for the first invoice of the subscription
       const firstInvoiceId = newAsaasSubscription.invoiceId; // Asaas retorna invoiceId com assinatura
@@ -188,6 +197,7 @@ asaas.post(
       }
 
       const checkoutUrl = `https://www.asaas.com/c/${firstInvoiceId}`; // Formato da URL de checkout Asaas
+      console.log('ASAAS: URL de checkout gerada:', checkoutUrl);
 
       return c.json({ checkoutUrl, subscriptionId: newSubscription.id }, 200);
 
@@ -291,5 +301,4 @@ asaas.post('/webhook', async (c) => {
     return c.json({ error: 'Internal server error processing webhook' }, 500);
   }
 });
-
 export default asaas;
