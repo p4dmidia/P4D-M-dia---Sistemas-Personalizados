@@ -20,17 +20,32 @@ const asaas = new Hono<{ Bindings: Bindings, Variables: Variables }>();
 
 // Middleware to get user from Supabase session if available
 asaas.use('*', async (c, next) => {
-  const supabase = c.get('supabase'); // Use o cliente anônimo para a sessão do usuário
+  const supabaseAdmin = c.get('supabaseAdmin'); // Use o cliente admin para verificar o token
   const authHeader = c.req.header('Authorization');
+  
+  console.log('ASAAS Middleware: Authorization Header:', authHeader); // Log header
+
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.split(' ')[1];
-    const { data: { user }, error } = await supabase.auth.getUser(token);
+    console.log('ASAAS Middleware: Token:', token); // Log token
+
+    // Use the admin client to get the user from the token
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+    
     if (error) {
       console.error('ASAAS Middleware: Supabase auth error:', error);
     }
+    
+    console.log('ASAAS Middleware: User from token:', user); // Log user object
+
     if (user) {
       c.set('userId', user.id);
+      console.log('ASAAS Middleware: userId set:', user.id);
+    } else {
+      console.log('ASAAS Middleware: User not found for token.');
     }
+  } else {
+    console.log('ASAAS Middleware: No valid Authorization header found.');
   }
   await next();
 });

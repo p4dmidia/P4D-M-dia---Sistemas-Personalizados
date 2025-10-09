@@ -11,20 +11,27 @@ type Bindings = {
   SUPABASE_ANON_KEY: string;
   JWT_SECRET: string; // Still needed if Hono JWT is used for other purposes
   ASAAS_API_KEY: string; // Add Asaas API Key to bindings
+  SUPABASE_SERVICE_ROLE_KEY: string; // Add service role key
 };
 
 // Extend the ContextVariableMap to include the Supabase client
 type Variables = {
   supabase: SupabaseClient;
+  supabaseAdmin: SupabaseClient; // Add admin client
   userId?: string; // Add userId to variables for middleware
 };
 
 const app = new Hono<{ Bindings: Bindings, Variables: Variables }>();
 
-// Middleware to initialize Supabase client and make it available in context
+// Middleware to initialize Supabase clients and make them available in context
 app.use('*', async (c, next) => {
   const supabase = createWorkerSupabaseClient(c.env.SUPABASE_URL, c.env.SUPABASE_ANON_KEY);
   c.set('supabase', supabase);
+
+  // Create and set the admin client
+  const supabaseAdmin = createWorkerSupabaseClient(c.env.SUPABASE_URL, c.env.SUPABASE_SERVICE_ROLE_KEY);
+  c.set('supabaseAdmin', supabaseAdmin);
+
   await next();
 });
 
