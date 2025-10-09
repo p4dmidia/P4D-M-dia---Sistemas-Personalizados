@@ -7,10 +7,12 @@ type Bindings = {
   ASAAS_API_KEY: string; // Asaas API Key
   SUPABASE_URL: string;
   SUPABASE_ANON_KEY: string;
+  SUPABASE_SERVICE_ROLE_KEY: string; // Adicione a chave de service role aqui
 };
 
 type Variables = {
-  supabase: SupabaseClient;
+  supabase: SupabaseClient; // Cliente anônimo
+  supabaseAdmin: SupabaseClient; // Cliente admin
   userId?: string; // Optional userId from auth middleware
 };
 
@@ -18,13 +20,13 @@ const asaas = new Hono<{ Bindings: Bindings, Variables: Variables }>();
 
 // Middleware to get user from Supabase session if available
 asaas.use('*', async (c, next) => {
-  const supabase = c.get('supabase');
+  const supabase = c.get('supabase'); // Use o cliente anônimo para a sessão do usuário
   const authHeader = c.req.header('Authorization');
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.split(' ')[1];
     const { data: { user }, error } = await supabase.auth.getUser(token);
     if (error) {
-      console.error('Supabase auth error in asaas middleware:', error);
+      console.error('ASAAS Middleware: Supabase auth error:', error);
     }
     if (user) {
       c.set('userId', user.id);
@@ -48,10 +50,19 @@ asaas.post(
   async (c) => {
     const { plan_name, amount, asaas_plan_id, funnel_response_id } = c.req.valid('json');
     const userId = c.get('userId');
-    const supabase = c.get('supabase');
+    const supabase = c.get('supabase'); // Cliente anônimo para operações de DB com RLS
+    const supabaseAdmin = c.get('supabaseAdmin'); // Cliente admin para operações auth.admin
     const asaasApiKey = c.env.ASAAS_API_KEY;
 
+    // --- Adição de verificação da chave Asaas ---
+    if (!asaasApiKey) {
+      console.error('ASAAS_API_KEY não está definida nas variáveis de ambiente do worker.');
+      return c.json({ error: 'Chave da API Asaas está faltando na configuração do servidor.' }, 500);
+    }
+    // --- Fim da adição ---
+
     if (!userId) {
+      console.error('ASAAS: Usuário não autenticado para criação de assinatura.');
       return c.json({ error: 'User not authenticated' }, 401);
     }
 
@@ -65,22 +76,32 @@ asaas.post(
         .single();
 
       if (profileError && profileError.code !== 'PGRST116') {
-        console.error('Error fetching profile for Asaas customer ID:', profileError);
+        console.error('ASAAS: Erro ao buscar perfil para Asaas customer ID:', profileError);
         return c.json({ error: 'Failed to fetch user profile' }, 500);
       }
 
       if (existingProfile?.asaas_customer_id) {
         asaasCustomerId = existingProfile.asaas_customer_id;
+        console.log(`ASAAS: Cliente Asaas existente encontrado: ${asaasCustomerId}`);
       } else {
-        // Fetch user email and name to create Asaas customer
-        const { data: userData, error: userError } = await supabase.auth.admin.getUserById(userId);
-        if (userError || !userData.user) {
-          console.error('Error fetching user data for Asaas customer creation:', userError);
-          return c.json({ error: 'Failed to fetch user data for Asaas' }, 500);
+        // Fetch user email and name to create Asaas customer using the ADMIN client
+        console.log(`ASAAS: Tentando buscar dados do usuário para userId: ${userId} usando cliente admin.`);
+        const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId);
+        
+        if (userError) {
+          console.error('ASAAS: Erro ao buscar dados do usuário com cliente de service role:', userError);
+          return c.json({ error: `Failed to fetch user data for Asaas: ${userError.message}` }, 500);
         }
+        if (!userData.user) {
+          console.error('ASAAS: Nenhum dado de usuário retornado do cliente de service role para userId:', userId);
+          return c.json({ error: 'Failed to fetch user data for Asaas: User not found or invalid response' }, 500);
+        }
+        
         const userEmail = userData.user.email;
         const userName = userData.user.user_metadata.first_name || userEmail?.split('@')[0];
+        console.log(`ASAAS: Dados do usuário buscados. Email: ${userEmail}, Nome: ${userName}`);
 
+        console.log('ASAAS: Criando cliente Asaas...');
         const asaasCustomerResponse = await fetch('https://api.asaas.com/v3/customers', {
           method: 'POST',
           headers: {
@@ -90,36 +111,44 @@ asaas.post(
           body: JSON.stringify({
             name: userName,
             email: userEmail,
-            // You might want to add CPF/CNPJ, phone, address here if collected in funnel
+            // Você pode adicionar CPF/CNPJ, telefone, endereço aqui se coletado no funil
           }),
         });
 
         if (!asaasCustomerResponse.ok) {
           const errorData = await asaasCustomerResponse.json();
-          console.error('Asaas customer creation failed:', errorData);
+          console.error('ASAAS: Falha na criação do cliente Asaas:', errorData);
           return c.json({ error: 'Failed to create Asaas customer', details: errorData }, 500);
         }
         const newAsaasCustomer = await asaasCustomerResponse.json();
         asaasCustomerId = newAsaasCustomer.id;
+        console.log(`ASAAS: Cliente Asaas criado com ID: ${asaasCustomerId}`);
 
-        // Update profile with Asaas customer ID
-        await supabase
+        // Update profile with Asaas customer ID using the ANON client (as profiles table has RLS)
+        const { error: updateProfileError } = await supabase
           .from('profiles')
           .update({ asaas_customer_id: asaasCustomerId, updated_at: new Date().toISOString() })
           .eq('id', userId);
+        
+        if (updateProfileError) {
+          console.error('ASAAS: Erro ao atualizar perfil do usuário com Asaas customer ID:', updateProfileError);
+          // Não bloqueie o fluxo inteiro, mas registre o erro
+        }
       }
+      console.log(`ASAAS: Usando Asaas customer ID: ${asaasCustomerId}`);
 
       // 2. Create Subscription in Asaas
       const subscriptionPayload = {
         customer: asaasCustomerId,
-        billingType: 'CREDIT_CARD', // Or 'BOLETO', 'PIX' - depends on your setup
+        billingType: 'CREDIT_CARD', // Ou 'BOLETO', 'PIX' - depende da sua configuração
         value: amount,
-        nextDueDate: new Date().toISOString().split('T')[0], // Start today
-        cycle: 'MONTHLY', // Or 'WEEKLY', 'QUARTERLY', 'SEMIANNUALLY', 'YEARLY'
+        nextDueDate: new Date().toISOString().split('T')[0], // Começa hoje
+        cycle: 'MONTHLY', // Ou 'WEEKLY', 'QUARTERLY', 'SEMIANNUALLY', 'YEARLY'
         description: `Assinatura do plano: ${plan_name}`,
-        externalReference: userId, // Link to your internal user ID
-        // You can add more details like discount, fine, interest, etc.
+        externalReference: userId, // Link para seu ID de usuário interno
+        // Você pode adicionar mais detalhes como desconto, multa, juros, etc.
       };
+      console.log('ASAAS: Criando assinatura com payload:', subscriptionPayload);
 
       const asaasSubscriptionResponse = await fetch('https://api.asaas.com/v3/subscriptions', {
         method: 'POST',
@@ -132,12 +161,13 @@ asaas.post(
 
       if (!asaasSubscriptionResponse.ok) {
         const errorData = await asaasSubscriptionResponse.json();
-        console.error('Asaas subscription creation failed:', errorData);
+        console.error('ASAAS: Falha na criação da assinatura Asaas:', errorData);
         return c.json({ error: 'Failed to create Asaas subscription', details: errorData }, 500);
       }
       const newAsaasSubscription = await asaasSubscriptionResponse.json();
+      console.log('ASAAS: Assinatura Asaas criada:', newAsaasSubscription);
 
-      // 3. Save subscription details to your Supabase 'subscriptions' table
+      // 3. Save subscription details to your Supabase 'subscriptions' table using the ANON client
       const { data: newSubscription, error: dbInsertError } = await supabase
         .from('subscriptions')
         .insert({
@@ -145,31 +175,33 @@ asaas.post(
           asaas_subscription_id: newAsaasSubscription.id,
           plan_name: plan_name,
           amount: amount,
-          status: 'pending', // Will be updated to 'active' by webhook
+          status: 'pending', // Será atualizado para 'active' pelo webhook
           next_due_date: newAsaasSubscription.nextDueDate,
-          // You might want to link to funnel_response_id here as well
+          funnel_response_id: funnel_response_id, // Link para a resposta do funil
         })
         .select()
         .single();
 
       if (dbInsertError) {
-        console.error('Error saving subscription to DB:', dbInsertError);
+        console.error('ASAAS: Erro ao salvar assinatura no DB:', dbInsertError);
         return c.json({ error: 'Failed to save subscription details' }, 500);
       }
+      console.log('ASAAS: Assinatura salva no DB:', newSubscription);
 
       // 4. Get checkout URL for the first invoice of the subscription
-      const firstInvoiceId = newAsaasSubscription.invoiceId; // Asaas returns invoiceId with subscription
+      const firstInvoiceId = newAsaasSubscription.invoiceId; // Asaas retorna invoiceId com assinatura
       if (!firstInvoiceId) {
-        console.error('No invoice ID returned for new subscription');
+        console.error('ASAAS: Nenhum ID de fatura retornado para a nova assinatura');
         return c.json({ error: 'Failed to get invoice for checkout' }, 500);
       }
 
-      const checkoutUrl = `https://www.asaas.com/c/${firstInvoiceId}`; // Asaas checkout URL format
+      const checkoutUrl = `https://www.asaas.com/c/${firstInvoiceId}`; // Formato da URL de checkout Asaas
+      console.log('ASAAS: URL de checkout gerada:', checkoutUrl);
 
       return c.json({ checkoutUrl, subscriptionId: newSubscription.id }, 200);
 
     } catch (error) {
-      console.error('Error in create-subscription endpoint:', error);
+      console.error('ASAAS: Erro no endpoint create-subscription:', error);
       return c.json({ error: 'Internal server error' }, 500);
     }
   }
@@ -178,14 +210,14 @@ asaas.post(
 // Endpoint for Asaas Webhook notifications
 asaas.post('/webhook', async (c) => {
   const asaasApiKey = c.env.ASAAS_API_KEY;
-  const supabase = c.get('supabase');
+  const supabase = c.get('supabase'); // Use anon client for DB operations
   const payload = await c.req.json();
 
   // Basic webhook verification (Asaas recommends checking the event type and payload)
   // For production, you should implement a more robust verification, e.g., checking a signature if Asaas provides one.
   // For now, we'll just check if it's a payment or subscription event.
 
-  console.log('Asaas Webhook received:', payload);
+  console.log('Asaas Webhook recebido:', payload);
 
   try {
     if (payload.event === 'PAYMENT_RECEIVED' || payload.event === 'PAYMENT_CONFIRMED') {
@@ -201,7 +233,7 @@ asaas.post('/webhook', async (c) => {
           .single();
 
         if (fetchError && fetchError.code !== 'PGRST116') {
-          console.error('Error fetching internal subscription for webhook:', fetchError);
+          console.error('ASAAS Webhook: Erro ao buscar assinatura interna:', fetchError);
           return c.json({ message: 'Error processing webhook', details: fetchError.message }, 500);
         }
 
@@ -210,19 +242,19 @@ asaas.post('/webhook', async (c) => {
           const { error: updateError } = await supabase
             .from('subscriptions')
             .update({
-              status: 'active', // Or 'paid', depending on your desired state
-              next_due_date: payment.dueDate, // Update next due date from Asaas
+              status: 'active', // Ou 'paid', dependendo do seu estado desejado
+              next_due_date: payment.dueDate, // Atualiza a próxima data de vencimento do Asaas
               updated_at: new Date().toISOString(),
             })
             .eq('id', dbSubscription.id);
 
           if (updateError) {
-            console.error('Error updating internal subscription status:', updateError);
+            console.error('ASAAS Webhook: Erro ao atualizar status da assinatura interna:', updateError);
             return c.json({ message: 'Error updating subscription status', details: updateError.message }, 500);
           }
-          console.log(`Subscription ${dbSubscription.id} updated to active.`);
+          console.log(`ASAAS Webhook: Assinatura ${dbSubscription.id} atualizada para ativa.`);
         } else {
-          console.warn(`No internal subscription found for Asaas ID: ${subscriptionId}`);
+          console.warn(`ASAAS Webhook: Nenhuma assinatura interna encontrada para o ID Asaas: ${subscriptionId}`);
         }
       }
     } else if (payload.event === 'SUBSCRIPTION_CANCELED') {
@@ -237,7 +269,7 @@ asaas.post('/webhook', async (c) => {
           .single();
 
         if (fetchError && fetchError.code !== 'PGRST116') {
-          console.error('Error fetching internal subscription for webhook cancellation:', fetchError);
+          console.error('ASAAS Webhook: Erro ao buscar assinatura interna para cancelamento:', fetchError);
           return c.json({ message: 'Error processing webhook', details: fetchError.message }, 500);
         }
 
@@ -251,20 +283,20 @@ asaas.post('/webhook', async (c) => {
             .eq('id', dbSubscription.id);
 
           if (updateError) {
-            console.error('Error updating internal subscription status to canceled:', updateError);
+            console.error('ASAAS Webhook: Erro ao atualizar status da assinatura interna para cancelada:', updateError);
             return c.json({ message: 'Error updating subscription status to canceled', details: updateError.message }, 500);
           }
-          console.log(`Subscription ${dbSubscription.id} updated to canceled.`);
+          console.log(`ASAAS Webhook: Assinatura ${dbSubscription.id} atualizada para cancelada.`);
         } else {
-          console.warn(`No internal subscription found for Asaas ID: ${subscriptionId} for cancellation.`);
+          console.warn(`ASAAS Webhook: Nenhuma assinatura interna encontrada para o ID Asaas: ${subscriptionId} para cancelamento.`);
         }
       }
     }
-    // Handle other Asaas events as needed (e.g., PAYMENT_OVERDUE, PAYMENT_REFUNDED, etc.)
+    // Lide com outros eventos Asaas conforme necessário (ex: PAYMENT_OVERDUE, PAYMENT_REFUNDED, etc.)
 
-    return c.json({ message: 'Webhook received and processed' }, 200);
+    return c.json({ message: 'Webhook recebido e processado' }, 200);
   } catch (error) {
-    console.error('Error processing Asaas webhook:', error);
+    console.error('ASAAS Webhook: Erro ao processar webhook Asaas:', error);
     return c.json({ error: 'Internal server error processing webhook' }, 500);
   }
 });
