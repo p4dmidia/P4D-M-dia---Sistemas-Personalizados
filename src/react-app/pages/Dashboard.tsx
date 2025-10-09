@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/browserClient';
 import { LogOut, UserCircle, Check, X, Settings, MessageCircle, Calendar, FileText, Code, Search, DollarSign, CreditCard, TrendingUp, Sparkles, Hourglass, Info, ChevronDown, ChevronUp } from 'lucide-react';
 import Confetti from 'react-confetti';
 import { Project, Subscription, FunnelResponse } from '@/shared/types'; // Import types
+import { User } from '@supabase/supabase-js'; // Import Supabase User type
 
 // Define project status mapping for progress and icons
 const projectStatusMap = {
@@ -41,15 +42,18 @@ export default function Dashboard() {
   const currentProject = projects[0]; // Assuming the latest project is the current one
   const currentSubscription = subscriptions.find(sub => sub.status === 'active');
 
-  const fetchDashboardData = useCallback(async () => {
+  const fetchDashboardData = useCallback(async (userFromAuth?: User) => {
     setLoading(true);
     try {
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-
-      if (userError || !user) {
-        toast.error('Sua sessão expirou ou você não está logado. Por favor, faça login novamente.');
-        navigate('/login');
-        return;
+      let user = userFromAuth;
+      if (!user) {
+        const { data: { user: authUser }, error: userError } = await supabase.auth.getUser();
+        if (userError || !authUser) {
+          toast.error('Sua sessão expirou ou você não está logado. Por favor, faça login novamente.');
+          navigate('/login');
+          return;
+        }
+        user = authUser;
       }
 
       // Fetch profile
@@ -107,10 +111,13 @@ export default function Dashboard() {
         console.error('Erro ao buscar assinaturas:', subscriptionsError);
         toast.error('Erro ao carregar assinaturas.');
       } else {
-        setSubscriptions(subscriptionsData || []);
         // Check if a new active plan was just set (e.g., after a successful payment)
+        // 'subscriptions' here refers to the state *before* this update
         const previousHasActivePlan = subscriptions.some(sub => sub.status === 'active');
         const currentHasActivePlan = (subscriptionsData || []).some(sub => sub.status === 'active');
+        
+        setSubscriptions(subscriptionsData || []); // Update the state *after* comparison
+
         if (!previousHasActivePlan && currentHasActivePlan) {
           setShowConfetti(true);
           setTimeout(() => setShowConfetti(false), 5000); // Hide confetti after 5 seconds
@@ -122,14 +129,14 @@ export default function Dashboard() {
     } finally {
       setLoading(false); // Ensure loading is always set to false
     }
-  }, [navigate, subscriptions]); // Added subscriptions to dependency array to trigger confetti logic
+  }, [navigate]); // Removed 'subscriptions' from dependencies
 
   useEffect(() => {
     fetchDashboardData();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
-        fetchDashboardData();
+        fetchDashboardData(session.user); // Pass the user directly
       } else {
         setUserProfile(null);
         setProjects([]);
