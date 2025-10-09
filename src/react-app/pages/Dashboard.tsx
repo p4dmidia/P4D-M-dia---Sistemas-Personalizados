@@ -59,7 +59,7 @@ export default function Dashboard() {
       // Fetch profile
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('first_name, last_name, avatar_url')
+        .select('first_name, last_name, avatar_url, asaas_customer_id') // Fetch asaas_customer_id
         .eq('id', user.id)
         .single();
 

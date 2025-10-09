@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Check, Star } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { supabase } from '@/integrations/supabase/browserClient'; // Import supabase client
 
 interface FunnelSummaryState {
   formData: Record<string, any>;
@@ -23,6 +24,7 @@ export default function FunnelSummary() {
     {
       name: '🟦 Site Institucional',
       price: 'R$ 29,90',
+      amount: 29.90, // Add numeric amount for Asaas
       description: 'Perfeito para empresas e profissionais que desejam uma presença digital moderna e profissional',
       features: [
         'Página institucional completa (Home, Sobre, Serviços e Contato)',
@@ -38,6 +40,7 @@ export default function FunnelSummary() {
     {
       name: '🟩 E-commerce ou Landing Page de Alta Conversão',
       price: 'R$ 49,90',
+      amount: 49.90, // Add numeric amount for Asaas
       description: 'Feito para quem quer vender online ou gerar leads todos os dias',
       features: [
         'Loja virtual ou landing page personalizada',
@@ -52,6 +55,7 @@ export default function FunnelSummary() {
     {
       name: '🟧 Cardápio Digital para Delivery',
       price: 'R$ 79,90',
+      amount: 79.90, // Add numeric amount for Asaas
       description: 'Ideal para restaurantes e lanchonetes que querem digitalizar o atendimento',
       features: [
         'Cardápio digital interativo com fotos e preços',
@@ -67,6 +71,7 @@ export default function FunnelSummary() {
     {
       name: '🟪 E-commerce com Afiliados / Clube de Assinatura / Pontuação por CPF',
       price: 'R$ 119,90',
+      amount: 119.90, // Add numeric amount for Asaas
       description: 'Transforme seu negócio em um sistema de vendas completo',
       features: [
         'Loja virtual personalizada',
@@ -82,6 +87,7 @@ export default function FunnelSummary() {
     {
       name: '🟥 CRM, Sistemas Internos e Cashback',
       price: 'R$ 149,90',
+      amount: 149.90, // Add numeric amount for Asaas
       description: 'Controle total do seu negócio em um único painel',
       features: [
         'CRM com gestão de clientes e pipeline',
@@ -96,6 +102,7 @@ export default function FunnelSummary() {
     {
       name: '🟫 Sistemas com Inteligência Artificial',
       price: 'A partir de R$ 199,90',
+      amount: 199.90, // Add numeric amount for Asaas (base price)
       description: 'A era da IA chegou, e sua empresa pode estar à frente',
       features: [
         'Chatbots e agentes inteligentes (LLM)',
@@ -156,10 +163,51 @@ export default function FunnelSummary() {
     generateSummaryAndRecommendPlan();
   }, [formData, funnelId, navigate]);
 
-  const handleSelectPlan = (planName: string, asaasId: string) => {
-    // Here you would navigate to the registration/checkout page
-    // passing the selected plan details and funnelId
-    navigate('/register', { state: { selectedPlan: planName, asaasPlanId: asaasId, funnelId } });
+  const handleSelectPlan = async (plan: typeof plans[0]) => {
+    setLoading(true);
+    toast.loading('Preparando sua assinatura...', { id: 'asaas-checkout' });
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('Você precisa estar logado para ativar um plano.', { id: 'asaas-checkout' });
+        navigate('/login');
+        return;
+      }
+
+      const response = await fetch('/api/asaas/create-subscription', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          plan_name: plan.name,
+          amount: plan.amount,
+          asaas_plan_id: plan.asaasId,
+          funnel_response_id: funnelId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Failed to create Asaas subscription:', errorData);
+        toast.error(errorData.error || 'Erro ao criar assinatura no Asaas.', { id: 'asaas-checkout' });
+        setLoading(false);
+        return;
+      }
+
+      const { checkoutUrl, subscriptionId } = await response.json();
+      toast.success('Redirecionando para o pagamento...', { id: 'asaas-checkout' });
+      
+      // Redirect to Asaas checkout page
+      window.location.href = checkoutUrl;
+
+    } catch (error) {
+      console.error('Error during Asaas subscription creation:', error);
+      toast.error('Erro de conexão ao ativar o plano.', { id: 'asaas-checkout' });
+      setLoading(false);
+    }
   };
 
   if (loading) {
@@ -245,7 +293,7 @@ export default function FunnelSummary() {
               </div>
 
               <button
-                onClick={() => handleSelectPlan(plan.name, plan.asaasId)}
+                onClick={() => handleSelectPlan(plan)}
                 className={`w-full bg-gradient-to-r ${plan.color} hover:opacity-90 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 ${
                   plan.name === recommendedPlan ? 'shadow-lg hover:shadow-blue-500/25' : ''
                 }`}
