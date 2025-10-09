@@ -43,80 +43,85 @@ export default function Dashboard() {
 
   const fetchDashboardData = useCallback(async () => {
     setLoading(true);
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
 
-    if (userError || !user) {
-      toast.error('Sua sessão expirou ou você não está logado. Por favor, faça login novamente.');
-      navigate('/login');
-      return;
-    }
+      if (userError || !user) {
+        toast.error('Sua sessão expirou ou você não está logado. Por favor, faça login novamente.');
+        navigate('/login');
+        return;
+      }
 
-    // Fetch profile
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('first_name, last_name, avatar_url')
-      .eq('id', user.id)
-      .single();
+      // Fetch profile
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('first_name, last_name, avatar_url')
+        .eq('id', user.id)
+        .single();
 
-    if (profileError && profileError.code !== 'PGRST116') {
-      console.error('Erro ao buscar perfil:', profileError);
-      toast.error('Erro ao carregar dados do perfil.');
-    } else if (profile) {
-      setUserProfile({ ...profile, email: user.email });
-    } else {
-      setUserProfile({ first_name: user.user_metadata.first_name || user.email?.split('@')[0], email: user.email });
-    }
+      if (profileError && profileError.code !== 'PGRST116') {
+        console.error('Erro ao buscar perfil:', profileError);
+        toast.error('Erro ao carregar dados do perfil.');
+      } else if (profile) {
+        setUserProfile({ ...profile, email: user.email });
+      } else {
+        setUserProfile({ first_name: user.user_metadata.first_name || user.email?.split('@')[0], email: user.email });
+      }
 
-    // Fetch projects
-    const { data: projectsData, error: projectsError } = await supabase
-      .from('projects')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+      // Fetch projects
+      const { data: projectsData, error: projectsError } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
-    if (projectsError) {
-      console.error('Erro ao buscar projetos:', projectsError);
-      toast.error('Erro ao carregar projetos.');
-    } else {
-      setProjects(projectsData || []);
-      if (projectsData && projectsData.length > 0 && projectsData[0].funnel_response_id) {
-        // Fetch funnel response for the latest project
-        const { data: funnelData, error: funnelError } = await supabase
-          .from('funnel_responses')
-          .select('*')
-          .eq('id', projectsData[0].funnel_response_id)
-          .single();
-        if (funnelError && funnelError.code !== 'PGRST116') {
-          console.error('Erro ao buscar resumo do funil:', funnelError);
-          toast.error('Erro ao carregar resumo do funil.');
-        } else {
-          setFunnelResponse(funnelData);
+      if (projectsError) {
+        console.error('Erro ao buscar projetos:', projectsError);
+        toast.error('Erro ao carregar projetos.');
+      } else {
+        setProjects(projectsData || []);
+        if (projectsData && projectsData.length > 0 && projectsData[0].funnel_response_id) {
+          // Fetch funnel response for the latest project
+          const { data: funnelData, error: funnelError } = await supabase
+            .from('funnel_responses')
+            .select('*')
+            .eq('id', projectsData[0].funnel_response_id)
+            .single();
+          if (funnelError && funnelError.code !== 'PGRST116') {
+            console.error('Erro ao buscar resumo do funil:', funnelError);
+            toast.error('Erro ao carregar resumo do funil.');
+          } else {
+            setFunnelResponse(funnelData);
+          }
         }
       }
-    }
 
-    // Fetch subscriptions
-    const { data: subscriptionsData, error: subscriptionsError } = await supabase
-      .from('subscriptions')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+      // Fetch subscriptions
+      const { data: subscriptionsData, error: subscriptionsError } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
-    if (subscriptionsError) {
-      console.error('Erro ao buscar assinaturas:', subscriptionsError);
-      toast.error('Erro ao carregar assinaturas.');
-    } else {
-      setSubscriptions(subscriptionsData || []);
-      // Check if a new active plan was just set (e.g., after a successful payment)
-      const previousHasActivePlan = subscriptions.some(sub => sub.status === 'active');
-      const currentHasActivePlan = (subscriptionsData || []).some(sub => sub.status === 'active');
-      if (!previousHasActivePlan && currentHasActivePlan) {
-        setShowConfetti(true);
-        setTimeout(() => setShowConfetti(false), 5000); // Hide confetti after 5 seconds
+      if (subscriptionsError) {
+        console.error('Erro ao buscar assinaturas:', subscriptionsError);
+        toast.error('Erro ao carregar assinaturas.');
+      } else {
+        setSubscriptions(subscriptionsData || []);
+        // Check if a new active plan was just set (e.g., after a successful payment)
+        const previousHasActivePlan = subscriptions.some(sub => sub.status === 'active');
+        const currentHasActivePlan = (subscriptionsData || []).some(sub => sub.status === 'active');
+        if (!previousHasActivePlan && currentHasActivePlan) {
+          setShowConfetti(true);
+          setTimeout(() => setShowConfetti(false), 5000); // Hide confetti after 5 seconds
+        }
       }
+    } catch (error) {
+      console.error('Erro inesperado ao carregar dashboard:', error);
+      toast.error('Ocorreu um erro inesperado ao carregar o painel.');
+    } finally {
+      setLoading(false); // Ensure loading is always set to false
     }
-
-    setLoading(false);
   }, [navigate, subscriptions]); // Added subscriptions to dependency array to trigger confetti logic
 
   useEffect(() => {
