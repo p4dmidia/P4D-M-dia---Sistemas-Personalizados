@@ -178,16 +178,16 @@ export default function Dashboard() {
     // This should ideally navigate to a checkout page or Asaas directly
     // For now, we'll navigate to the funnel summary where plans are listed.
     navigate('/funnel/summary');
-    toast.info('Redirecionando para a seleção de planos...');
+    toast('Redirecionando para a seleção de planos...'); // Changed toast.info to toast()
   };
 
   const handleManagePayment = () => {
-    toast.info('Redirecionando para o painel de pagamentos Asaas (funcionalidade em breve)!');
+    toast('Redirecionando para o painel de pagamentos Asaas (funcionalidade em breve)!'); // Changed toast.info to toast()
     // In a real scenario, you'd redirect to Asaas customer portal or a specific invoice.
   };
 
   const handleChangePlan = () => {
-    toast.info('Redirecionando para a página de troca de planos (funcionalidade em breve)!');
+    toast('Redirecionando para a página de troca de planos (funcionalidade em breve)!'); // Changed toast.info to toast()
     // Redirect to a plan selection page
   };
 
@@ -400,7 +400,7 @@ export default function Dashboard() {
                     </p>
                     <button
                       onClick={handleActivatePlan}
-                      className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-2 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg"
+                      className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-3 px-8 rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-blue-500/25"
                     >
                       Ativar meu plano agora
                     </button>
@@ -640,18 +640,18 @@ export default function Dashboard() {
                   <h4 className="text-xl font-semibold text-gray-900 mb-3">Dados Pessoais</h4>
                   <p className="text-gray-700">Nome: <span className="font-medium">{userProfile?.first_name} {userProfile?.last_name}</span></p>
                   <p className="text-gray-700">Email: <span className="font-medium">{userProfile?.email}</span></p>
-                  <button onClick={() => toast.info('Funcionalidade em breve!')} className="mt-3 text-blue-600 hover:text-blue-500 text-sm">Editar Perfil</button>
+                  <button onClick={() => toast('Funcionalidade em breve!')} className="mt-3 text-blue-600 hover:text-blue-500 text-sm">Editar Perfil</button>
                 </div>
                 <div>
                   <h4 className="text-xl font-semibold text-gray-900 mb-3">Preferências de Notificação</h4>
                   <p className="text-gray-700">Receber notificações por email: <span className="font-medium">Sim</span></p>
                   <p className="text-gray-700">Receber notificações por WhatsApp: <span className="font-medium">Sim</span></p>
-                  <button onClick={() => toast.info('Funcionalidade em breve!')} className="mt-3 text-blue-600 hover:text-blue-500 text-sm">Gerenciar Notificações</button>
+                  <button onClick={() => toast('Funcionalidade em breve!')} className="mt-3 text-blue-600 hover:text-blue-500 text-sm">Gerenciar Notificações</button>
                 </div>
                 <div>
                   <h4 className="text-xl font-semibold text-gray-900 mb-3">Tema do Projeto</h4>
                   <p className="text-gray-700">Opção de alterar logotipo, cores do sistema (funcionalidade em breve!)</p>
-                  <button onClick={() => toast.info('Funcionalidade em breve!')} className="mt-3 text-blue-600 hover:text-blue-500 text-sm">Personalizar Tema</button>
+                  <button onClick={() => toast('Funcionalidade em breve!')} className="mt-3 text-blue-600 hover:text-blue-500 text-sm">Personalizar Tema</button>
                 </div>
               </div>
             </div>

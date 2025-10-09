@@ -188,8 +188,13 @@ export default function FunnelSummary() {
     if (!loading) { // Only generate summary once loading is complete
       const generateSummaryAndRecommendPlan = () => {
         const businessType = formData.business_type || 'seu negócio';
-        const systemGoal = Array.isArray(formData.system_goal) ? formData.system_goal.join(', ').toLowerCase() : formData.system_goal;
-        const desiredFeatures = Array.isArray(formData.desired_features) ? formData.desired_features.join(', ').toLowerCase() : formData.desired_features;
+        // Ensure systemGoal and desiredFeatures are always strings before calling methods
+        const systemGoal = Array.isArray(formData.system_goal) 
+          ? formData.system_goal.join(', ').toLowerCase() 
+          : (formData.system_goal || '').toLowerCase();
+        const desiredFeatures = Array.isArray(formData.desired_features) 
+          ? formData.desired_features.join(', ').toLowerCase() 
+          : (formData.desired_features || '').toLowerCase();
         const companyName = formData.company_name || 'sua empresa';
 
         let generatedSummary = `Perfeito! Vamos criar um sistema para ${companyName} com foco em ${systemGoal || 'otimizar suas operações'}.`;
