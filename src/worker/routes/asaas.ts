@@ -23,29 +23,17 @@ asaas.use('*', async (c, next) => {
   const supabaseAdmin = c.get('supabaseAdmin'); // Use o cliente admin para verificar o token
   const authHeader = c.req.header('Authorization');
   
-  console.log('ASAAS Middleware: Authorization Header:', authHeader); // Log header
-
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.split(' ')[1];
-    console.log('ASAAS Middleware: Token:', token); // Log token
-
-    // Use the admin client to get the user from the token
     const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
     
     if (error) {
       console.error('ASAAS Middleware: Supabase auth error:', error);
     }
     
-    console.log('ASAAS Middleware: User from token:', user); // Log user object
-
     if (user) {
       c.set('userId', user.id);
-      console.log('ASAAS Middleware: userId set:', user.id);
-    } else {
-      console.log('ASAAS Middleware: User not found for token.');
     }
-  } else {
-    console.log('ASAAS Middleware: No valid Authorization header found.');
   }
   await next();
 });
@@ -69,14 +57,10 @@ asaas.post(
     const supabaseAdmin = c.get('supabaseAdmin'); // Cliente admin para operações auth.admin
     const asaasApiKey = c.env.ASAAS_API_KEY;
 
-    // --- Adição de verificação da chave Asaas ---
     if (!asaasApiKey) {
       console.error('ASAAS_API_KEY não está definida nas variáveis de ambiente do worker.');
       return c.json({ error: 'Chave da API Asaas está faltando na configuração do servidor.' }, 500);
     }
-    // --- NOVO LOG AQUI ---
-    console.log('ASAAS: Chave da API Asaas sendo usada (primeiros 10 caracteres):', asaasApiKey.substring(0, 10) + '...');
-    // --- Fim do NOVO LOG ---
 
     if (!userId) {
       console.error('ASAAS: Usuário não autenticado para criação de assinatura.');
@@ -99,10 +83,8 @@ asaas.post(
 
       if (existingProfile?.asaas_customer_id) {
         asaasCustomerId = existingProfile.asaas_customer_id;
-        console.log(`ASAAS: Cliente Asaas existente encontrado: ${asaasCustomerId}`);
       } else {
         // Fetch user email and name to create Asaas customer using the ADMIN client
-        console.log(`ASAAS: Tentando buscar dados do usuário para userId: ${userId} usando cliente admin.`);
         const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId);
         
         if (userError) {
@@ -116,10 +98,8 @@ asaas.post(
         
         const userEmail = userData.user.email;
         const userName = userData.user.user_metadata.first_name || userEmail?.split('@')[0];
-        console.log(`ASAAS: Dados do usuário buscados. Email: ${userEmail}, Nome: ${userName}`);
 
-        console.log('ASAAS: Criando cliente Asaas...');
-        const asaasCustomerResponse = await fetch('https://api.asaas.com/v3/customers', {
+        const asaasCustomerResponse = await fetch('https://api.asaas.com/v3/customers', { // <-- Endpoint da API Asaas
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -139,7 +119,6 @@ asaas.post(
         }
         const newAsaasCustomer = await asaasCustomerResponse.json();
         asaasCustomerId = newAsaasCustomer.id;
-        console.log(`ASAAS: Cliente Asaas criado com ID: ${asaasCustomerId}`);
 
         // Update profile with Asaas customer ID using the ANON client (as profiles table has RLS)
         const { error: updateProfileError } = await supabase
@@ -152,7 +131,6 @@ asaas.post(
           // Não bloqueie o fluxo inteiro, mas registre o erro
         }
       }
-      console.log(`ASAAS: Usando Asaas customer ID: ${asaasCustomerId}`);
 
       // 2. Create Subscription in Asaas
       const subscriptionPayload = {
@@ -165,9 +143,8 @@ asaas.post(
         externalReference: userId, // Link para seu ID de usuário interno
         // Você pode adicionar mais detalhes como desconto, multa, juros, etc.
       };
-      console.log('ASAAS: Criando assinatura com payload:', subscriptionPayload);
 
-      const asaasSubscriptionResponse = await fetch('https://api.asaas.com/v3/subscriptions', {
+      const asaasSubscriptionResponse = await fetch('https://api.asaas.com/v3/subscriptions', { // <-- Endpoint da API Asaas
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -182,7 +159,6 @@ asaas.post(
         return c.json({ error: 'Failed to create Asaas subscription', details: errorData }, 500);
       }
       const newAsaasSubscription = await asaasSubscriptionResponse.json();
-      console.log('ASAAS: Assinatura Asaas criada:', newAsaasSubscription);
 
       // 3. Save subscription details to your Supabase 'subscriptions' table using the ANON client
       const { data: newSubscription, error: dbInsertError } = await supabase
@@ -203,7 +179,6 @@ asaas.post(
         console.error('ASAAS: Erro ao salvar assinatura no DB:', dbInsertError);
         return c.json({ error: 'Failed to save subscription details' }, 500);
       }
-      console.log('ASAAS: Assinatura salva no DB:', newSubscription);
 
       // 4. Get checkout URL for the first invoice of the subscription
       const firstInvoiceId = newAsaasSubscription.invoiceId; // Asaas retorna invoiceId com assinatura
@@ -213,7 +188,6 @@ asaas.post(
       }
 
       const checkoutUrl = `https://www.asaas.com/c/${firstInvoiceId}`; // Formato da URL de checkout Asaas
-      console.log('ASAAS: URL de checkout gerada:', checkoutUrl);
 
       return c.json({ checkoutUrl, subscriptionId: newSubscription.id }, 200);
 
