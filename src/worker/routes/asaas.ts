@@ -102,6 +102,7 @@ asaas.post(
 
         console.log('ASAAS: Tentando criar cliente Asaas com:', { name: userName, email: userEmail });
         console.log('ASAAS: Usando ASAAS_API_KEY (primeiros 5 chars):', asaasApiKey.substring(0, 5) + '...');
+        console.log('ASAAS: Chave de API Asaas completa sendo enviada:', asaasApiKey); // NOVO LOG AQUI
 
         const asaasCustomerResponse = await fetch('https://api.asaas.com/v3/customers', { // <-- Endpoint da API Asaas
           method: 'POST',
