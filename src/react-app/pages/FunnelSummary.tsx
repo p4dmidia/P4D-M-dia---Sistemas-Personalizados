@@ -5,6 +5,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Check, Star } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '@/integrations/supabase/browserClient'; // Import supabase client
+import { FunnelResponse } from '@/shared/types'; // Import FunnelResponse type
 
 interface FunnelSummaryState {
   formData: Record<string, any>;
@@ -14,10 +15,13 @@ interface FunnelSummaryState {
 export default function FunnelSummary() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { formData, funnelId } = (location.state as FunnelSummaryState) || {};
+  // Initialize with state if available, otherwise empty object/null
+  const [formData, setFormData] = useState<Record<string, any>>(location.state?.formData || {});
+  const [funnelId, setFunnelId] = useState<string | null>(location.state?.funnelId || null);
   const [summaryText, setSummaryText] = useState<string>('Gerando resumo do seu projeto...');
   const [recommendedPlan, setRecommendedPlan] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null); // Track user ID
 
   // Placeholder for plans (should ideally come from an API)
   const plans = [
@@ -118,50 +122,104 @@ export default function FunnelSummary() {
     }
   ];
 
+  // Effect to get user ID
   useEffect(() => {
-    if (!formData || !funnelId) {
-      toast.error('Dados do funil não encontrados. Por favor, preencha o funil novamente.');
-      navigate('/funnel');
-      return;
-    }
+    const getSession = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUserId(user?.id || null);
+    };
+    getSession();
 
-    // Simulate AI summary generation and plan recommendation
-    const generateSummaryAndRecommendPlan = () => {
-      // This is a simplified example. In a real app, you'd send formData to your Hono backend
-      // which would then use an LLM (like OpenAI, Gemini, etc.) to generate the summary
-      // and recommend a plan based on the features/goals.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserId(session?.user?.id || null);
+    });
 
-      const businessType = formData.business_type || 'seu negócio';
-      const systemGoal = Array.isArray(formData.system_goal) ? formData.system_goal.join(', ').toLowerCase() : formData.system_goal;
-      const desiredFeatures = Array.isArray(formData.desired_features) ? formData.desired_features.join(', ').toLowerCase() : formData.desired_features;
-      const companyName = formData.company_name || 'sua empresa'; // Assuming a step for company name
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
-      let generatedSummary = `Perfeito! Vamos criar um sistema para ${companyName} com foco em ${systemGoal || 'otimizar suas operações'}.`;
-      generatedSummary += ` Ele incluirá funcionalidades como: ${desiredFeatures || 'as que você descreveu'}.`;
-      generatedSummary += ` Entrega estimada em até 7 dias úteis (pode variar conforme complexidade).`;
-      generatedSummary += ` Seu sistema virá hospedado, otimizado e com suporte direto via WhatsApp.`;
+  // Effect to load funnel data if not from location.state
+  useEffect(() => {
+    const loadExistingFunnel = async () => {
+      // Only attempt to load if userId is known and no funnel data is present from location.state
+      if (userId && !funnelId && Object.keys(formData).length === 0) {
+        setLoading(true);
+        try {
+          const { data: funnelResponse, error } = await supabase
+            .from('funnel_responses')
+            .select('*')
+            .eq('user_id', userId)
+            .eq('completed', false) // Look for incomplete funnels
+            .order('updated_at', { ascending: false })
+            .limit(1)
+            .single();
 
-      setSummaryText(generatedSummary);
-
-      // Simple plan recommendation logic
-      let recommended = plans[0]; // Default to Site Institucional
-      if (desiredFeatures.includes('e-commerce') || businessType.includes('e-commerce')) {
-        recommended = plans[1];
-      } else if (businessType.includes('restaurant')) {
-        recommended = plans[2];
-      } else if (desiredFeatures.includes('affiliate') || desiredFeatures.includes('assinatura') || desiredFeatures.includes('pontos')) {
-        recommended = plans[3];
-      } else if (desiredFeatures.includes('crm') || desiredFeatures.includes('interno')) {
-        recommended = plans[4];
-      } else if (desiredFeatures.includes('inteligência artificial')) {
-        recommended = plans[5];
+          if (error && error.code !== 'PGRST116') { // PGRST116 means "no rows found"
+            console.error('Error loading existing funnel for user:', error);
+            toast.error('Erro ao carregar seu progresso anterior.');
+          } else if (funnelResponse) {
+            setFunnelId(funnelResponse.id!);
+            setFormData(funnelResponse.step_data);
+          }
+        } catch (err) {
+          console.error('Unexpected error loading funnel:', err);
+          toast.error('Erro inesperado ao carregar progresso.');
+        } finally {
+          setLoading(false);
+        }
+      } else if (!userId && !funnelId && Object.keys(formData).length === 0) {
+        // If no user and no funnel data, still show plans but with generic summary
+        setLoading(false);
+      } else {
+        setLoading(false); // If data is already present from state, stop loading
       }
-      setRecommendedPlan(recommended.name);
-      setLoading(false);
     };
 
-    generateSummaryAndRecommendPlan();
-  }, [formData, funnelId, navigate]);
+    if (userId !== null) { // Only run once userId is determined
+      loadExistingFunnel();
+    }
+  }, [userId, funnelId, formData]); // Depend on userId, funnelId, formData
+
+  // Effect to generate summary and recommend plan
+  useEffect(() => {
+    if (!loading) { // Only generate summary once loading is complete
+      const generateSummaryAndRecommendPlan = () => {
+        const businessType = formData.business_type || 'seu negócio';
+        const systemGoal = Array.isArray(formData.system_goal) ? formData.system_goal.join(', ').toLowerCase() : formData.system_goal;
+        const desiredFeatures = Array.isArray(formData.desired_features) ? formData.desired_features.join(', ').toLowerCase() : formData.desired_features;
+        const companyName = formData.company_name || 'sua empresa';
+
+        let generatedSummary = `Perfeito! Vamos criar um sistema para ${companyName} com foco em ${systemGoal || 'otimizar suas operações'}.`;
+        generatedSummary += ` Ele incluirá funcionalidades como: ${desiredFeatures || 'as que você descreveu'}.`;
+        generatedSummary += ` Entrega estimada em até 7 dias úteis (pode variar conforme complexidade).`;
+        generatedSummary += ` Seu sistema virá hospedado, otimizado e com suporte direto via WhatsApp.`;
+
+        // If formData is empty, provide a more generic summary
+        if (Object.keys(formData).length === 0) {
+          generatedSummary = "Explore nossos planos e encontre a solução perfeita para o seu negócio. Estamos prontos para transformar suas ideias em realidade!";
+        }
+
+        setSummaryText(generatedSummary);
+
+        let recommended = plans[0]; // Default to Site Institucional
+        if (desiredFeatures.includes('e-commerce') || businessType.includes('e-commerce')) {
+          recommended = plans[1];
+        } else if (businessType.includes('restaurant')) {
+          recommended = plans[2];
+        } else if (desiredFeatures.includes('affiliate') || desiredFeatures.includes('assinatura') || desiredFeatures.includes('pontos')) {
+          recommended = plans[3];
+        } else if (desiredFeatures.includes('crm') || desiredFeatures.includes('interno')) {
+          recommended = plans[4];
+        } else if (desiredFeatures.includes('inteligência artificial')) {
+          recommended = plans[5];
+        }
+        setRecommendedPlan(recommended.name);
+      };
+
+      generateSummaryAndRecommendPlan();
+    }
+  }, [formData, loading]); // Depend on formData and loading
 
   const handleSelectPlan = async (plan: typeof plans[0]) => {
     setLoading(true);
@@ -185,7 +243,7 @@ export default function FunnelSummary() {
           plan_name: plan.name,
           amount: plan.amount,
           asaas_plan_id: plan.asaasId,
-          funnel_response_id: funnelId,
+          funnel_response_id: funnelId, // Pass funnelId if available
         }),
       });
 
