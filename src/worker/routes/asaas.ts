@@ -74,7 +74,9 @@ asaas.post(
       console.error('ASAAS_API_KEY não está definida nas variáveis de ambiente do worker.');
       return c.json({ error: 'Chave da API Asaas está faltando na configuração do servidor.' }, 500);
     }
-    // --- Fim da adição ---
+    // --- NOVO LOG AQUI ---
+    console.log('ASAAS: Chave da API Asaas sendo usada (primeiros 10 caracteres):', asaasApiKey.substring(0, 10) + '...');
+    // --- Fim do NOVO LOG ---
 
     if (!userId) {
       console.error('ASAAS: Usuário não autenticado para criação de assinatura.');
