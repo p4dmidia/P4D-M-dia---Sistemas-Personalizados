@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { supabase } from '@/integrations/supabase/browserClient'; // Changed import
+import { ChevronLeft } from 'lucide-react'; // Importar o ícone ChevronLeft
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -120,6 +121,14 @@ export default function Login() {
             </button>
           </div>
         </form>
+        <div className="mt-6 text-center">
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center justify-center gap-2 px-4 py-2 rounded-md text-gray-400 hover:text-blue-400 transition-colors font-medium mx-auto"
+          >
+            <ChevronLeft className="w-5 h-5" /> Voltar para o Início
+          </button>
+        </div>
       </div>
     </div>
   );
