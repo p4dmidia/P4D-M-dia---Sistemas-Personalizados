@@ -73,8 +73,12 @@ export default function AdminUsersPage() {
         throw new Error(errorDetails);
       }
 
-      const data: UserProfile[] = await response.json();
-      setUsers(data);
+      const data = await response.json(); // Obter os dados brutos primeiro
+      if (!Array.isArray(data)) {
+        console.error('API response for profiles is not an array:', data);
+        throw new Error('Dados de usuários inválidos recebidos do servidor. Esperado um array, mas recebeu: ' + JSON.stringify(data));
+      }
+      setUsers(data as UserProfile[]); // Agora, fazer o cast e definir o estado
     } catch (err: any) {
       console.error('Erro ao buscar usuários:', err);
       setError(err.message || 'Erro ao carregar usuários.');
@@ -327,6 +331,10 @@ export default function AdminUsersPage() {
     const matchesRole = filterRole === 'All' || user.role === filterRole;
     return matchesSearch && matchesRole;
   });
+
+  // Logs de depuração antes do retorno do JSX
+  console.log('AdminUsersPage: users state (before render):', users);
+  console.log('AdminUsersPage: filteredUsers value (before render):', filteredUsers);
 
   if (loading) {
     return (
