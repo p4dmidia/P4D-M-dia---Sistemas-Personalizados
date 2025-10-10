@@ -6,7 +6,8 @@ import projects from "./routes/projects";
 import subscriptions from "./routes/subscriptions";
 import internalDocuments from "./routes/internalDocuments";
 import tasks from "./routes/tasks";
-import profiles from "./routes/profiles"; // Importando a nova rota de perfis
+import profiles from "./routes/profiles";
+import settings from "./routes/settings"; // Importando a nova rota de configurações
 import { createWorkerSupabaseClient } from '@/integrations/supabase/workerClient';
 import { SupabaseClient } from '@supabase/supabase-js';
 
@@ -44,7 +45,8 @@ app.route('/api/projects', projects);
 app.route('/api/subscriptions', subscriptions);
 app.route('/api/internal-documents', internalDocuments);
 app.route('/api/tasks', tasks);
-app.route('/api/profiles', profiles); // Adicionando a nova rota de perfis
+app.route('/api/profiles', profiles);
+app.route('/api/settings', settings); // Adicionando a nova rota de configurações
 
 app.get('/', (c) => {
   return c.text('P4D Mídia API is running!');
