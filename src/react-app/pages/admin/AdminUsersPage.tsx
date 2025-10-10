@@ -33,7 +33,6 @@ export default function AdminUsersPage() {
   console.log('AdminUsersPage rendering...'); // Log para depuração
   const navigate = useNavigate();
   const [users, setUsers] = useState<UserProfile[]>([]);
-  // Removido: const [filteredUsers, setFilteredUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -92,8 +91,6 @@ export default function AdminUsersPage() {
   useEffect(() => {
     fetchUsers();
   }, [navigate]);
-
-  // Removido: useEffect para calcular filteredUsers
 
   const handleEditUser = (user: UserProfile) => {
     setEditingUser({
@@ -442,7 +439,8 @@ export default function AdminUsersPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-800">
-                  {filteredUsers.map((user) => {
+                  {console.log('AdminUsersPage: filteredUsers right before map in JSX:', filteredUsers, typeof filteredUsers, Array.isArray(filteredUsers))}
+                  {Array.isArray(filteredUsers) && filteredUsers.map((user) => { // Adicionado a verificação Array.isArray aqui
                     const userStatus = getUserStatus(user);
                     const isSelf = user.id === currentAdminId;
                     return (
