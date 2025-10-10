@@ -2,11 +2,14 @@
 
 import React, { useState } from 'react';
 import { X, UserPlus, User, Mail, Lock, Briefcase } from 'lucide-react';
+import { UserSchema } from '@/shared/types'; // Importar UserSchema para os tipos de role
+
+type UserRole = z.infer<typeof UserSchema.shape.role>; // Definir UserRole a partir do schema
 
 interface CreateUserModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (data: { first_name: string; last_name: string; email: string; password: string; role: 'client' | 'admin' }) => Promise<void>;
+  onCreate: (data: { first_name: string; last_name: string; email: string; password: string; role: UserRole }) => Promise<void>;
 }
 
 export default function CreateUserModal({ isOpen, onClose, onCreate }: CreateUserModalProps) {
@@ -14,7 +17,7 @@ export default function CreateUserModal({ isOpen, onClose, onCreate }: CreateUse
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'client' | 'admin'>('client');
+  const [role, setRole] = useState<UserRole>('client'); // Usar o tipo UserRole
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -132,11 +135,14 @@ export default function CreateUserModal({ isOpen, onClose, onCreate }: CreateUse
               <select
                 id="newRole"
                 value={role}
-                onChange={(e) => setRole(e.target.value as 'client' | 'admin')}
+                onChange={(e) => setRole(e.target.value as UserRole)}
                 className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="client">Cliente</option>
-                <option value="admin">Administrador</option>
+                {UserSchema.shape.role.options.map((roleOption) => (
+                  <option key={roleOption} value={roleOption}>
+                    {roleOption.charAt(0).toUpperCase() + roleOption.slice(1)}
+                  </option>
+                ))}
               </select>
             </div>
           </div>

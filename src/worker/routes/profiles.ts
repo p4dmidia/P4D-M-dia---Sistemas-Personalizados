@@ -108,11 +108,12 @@ profiles.post(
   zValidator('json', z.object({
     email: z.string().email(),
     password: z.string().min(6), // Supabase default min password length is 6
-    name: z.string().optional(), // Make name optional here
-    role: z.enum(['client', 'admin']).default('client'),
+    first_name: z.string().optional(), // Usar first_name diretamente
+    last_name: z.string().optional(), // Adicionar last_name
+    role: UserSchema.shape.role.default('client'), // Usar o enum atualizado
   })),
   async (c) => {
-    const { email, password, name, role } = c.req.valid('json');
+    const { email, password, first_name, last_name, role } = c.req.valid('json');
     const supabaseAdmin = c.get('supabaseAdmin');
 
     if (!password) {
@@ -124,7 +125,7 @@ profiles.post(
         email,
         password,
         email_confirm: true, // Confirma o email automaticamente para admin-created users
-        user_metadata: { first_name: name },
+        user_metadata: { first_name: first_name, last_name: last_name }, // Passar first_name e last_name
       });
 
       if (error) {
@@ -135,7 +136,7 @@ profiles.post(
       // Atualiza o perfil para definir o role
       const { error: profileError } = await supabaseAdmin
         .from('profiles')
-        .update({ first_name: name, role: role || 'client', updated_at: new Date().toISOString() })
+        .update({ first_name: first_name, last_name: last_name, role: role, updated_at: new Date().toISOString() })
         .eq('id', data.user.id);
 
       if (profileError) {
@@ -160,7 +161,7 @@ profiles.put(
     first_name: z.string().optional(),
     last_name: z.string().optional(),
     email: z.string().email().optional(),
-    role: z.enum(['client', 'admin']).optional(),
+    role: UserSchema.shape.role.optional(), // Usar o enum atualizado
     is_banned: z.boolean().optional(), // Para bloquear/desbloquear
   })),
   async (c) => {
@@ -170,7 +171,7 @@ profiles.put(
 
     try {
       // 1. Atualizar a tabela 'profiles'
-      const profileUpdatePayload: { first_name?: string; last_name?: string; role?: 'client' | 'admin'; updated_at: string } = {
+      const profileUpdatePayload: { first_name?: string; last_name?: string; role?: z.infer<typeof UserSchema.shape.role>; updated_at: string } = {
         updated_at: new Date().toISOString(),
       };
       if (updateData.first_name !== undefined) profileUpdatePayload.first_name = updateData.first_name;
@@ -190,13 +191,16 @@ profiles.put(
       }
 
       // 2. Atualizar a tabela 'auth.users'
-      const userUpdatePayload: { email?: string; banned_until?: string | null; user_metadata?: { first_name?: string } } = {};
+      const userUpdatePayload: { email?: string; banned_until?: string | null; user_metadata?: { first_name?: string; last_name?: string } } = {};
       if (updateData.email !== undefined) userUpdatePayload.email = updateData.email;
       if (updateData.is_banned !== undefined) {
         userUpdatePayload.banned_until = updateData.is_banned ? new Date(8640000000000000).toISOString() : null; // Bloqueia indefinidamente ou desbloqueia
       }
-      if (updateData.first_name !== undefined) { // Atualiza user_metadata também
-        userUpdatePayload.user_metadata = { first_name: updateData.first_name };
+      if (updateData.first_name !== undefined || updateData.last_name !== undefined) { // Atualiza user_metadata também
+        userUpdatePayload.user_metadata = { 
+          first_name: updateData.first_name,
+          last_name: updateData.last_name,
+        };
       }
 
       const { data: updatedUserAuth, error: userAuthError } = await supabaseAdmin.auth.admin.updateUserById(

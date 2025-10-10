@@ -20,7 +20,7 @@ export const UserSchema = z.object({
   password: z.string().min(8).optional(), // Only for input, not stored
   password_hash: z.string().optional(), // Stored hash
   name: z.string().optional(),
-  role: z.enum(['client', 'admin']).default('client'), // Adicionado o campo role
+  role: z.enum(['client', 'admin', 'dev', 'copywriter', 'manager']).default('client'), // Adicionado os novos campos role
   created_at: z.string().datetime().optional(),
   updated_at: z.string().datetime().optional(),
 });
@@ -56,7 +56,9 @@ export type Project = z.infer<typeof ProjectSchema>;
 export const SubscriptionSchema = z.object({
   id: z.string().uuid().optional(),
   user_id: z.string().uuid(),
-  asaas_subscription_id: z.string().optional(),
+  asaas_subscription_id: z.string().nullable().optional(), // Mantido para compatibilidade
+  stripe_subscription_id: z.string().nullable().optional(), // Novo campo para Stripe
+  payment_gateway: z.enum(['asaas', 'stripe']).default('asaas'), // Novo campo para diferenciar
   plan_name: z.string(),
   amount: z.number(),
   status: z.string().default('pending'),

@@ -3,23 +3,26 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { ChevronLeft, User, Mail, Calendar, Edit, Trash2, UserPlus, Ban, CheckCircle2 } from 'lucide-react';
+import { ChevronLeft, User, Mail, Calendar, Edit, Trash2, UserPlus, Ban, CheckCircle2, Search, Filter } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/browserClient'; // Importar o cliente Supabase
 import EditUserModal from '@/react-app/components/admin/EditUserModal';
 import CreateUserModal from '@/react-app/components/admin/CreateUserModal';
+import { UserSchema } from '@/shared/types'; // Importar UserSchema para os tipos de role
+
+type UserRole = z.infer<typeof UserSchema.shape.role>; // Definir UserRole a partir do schema
 
 interface UserProfile {
   id: string;
   first_name: string | null;
   last_name: string | null;
   avatar_url: string | null;
-  role: 'client' | 'admin';
+  role: UserRole; // Usar o tipo UserRole
   updated_at: string;
   asaas_customer_id: string | null;
   auth_users: {
     email: string;
     created_at: string;
-    banned_until: string | null; // Adicionado para status de bloqueio
+    banned_until: string | null;
   };
 }
 
@@ -32,6 +35,8 @@ export default function AdminUsersPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
   const [currentAdminId, setCurrentAdminId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterRole, setFilterRole] = useState<UserRole | 'All'>('All');
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -88,7 +93,7 @@ export default function AdminUsersPage() {
 
   const handleSaveUser = async (
     userId: string,
-    data: { first_name?: string; last_name?: string; email?: string; role?: 'client' | 'admin'; is_banned?: boolean }
+    data: { first_name?: string; last_name?: string; email?: string; role?: UserRole; is_banned?: boolean }
   ) => {
     toast.loading('Salvando alterações...', { id: 'saveUser' });
     try {
@@ -173,7 +178,7 @@ export default function AdminUsersPage() {
   };
 
   const handleCreateUser = async (
-    data: { first_name: string; last_name: string; email: string; password: string; role: 'client' | 'admin' }
+    data: { first_name: string; last_name: string; email: string; password: string; role: UserRole }
   ) => {
     toast.loading('Cadastrando novo usuário...', { id: 'createUser' });
     try {
@@ -193,7 +198,8 @@ export default function AdminUsersPage() {
         body: JSON.stringify({
           email: data.email,
           password: data.password,
-          name: data.first_name, // Passa first_name como 'name' para o worker
+          first_name: data.first_name,
+          last_name: data.last_name,
           role: data.role,
         }),
       });
@@ -216,6 +222,34 @@ export default function AdminUsersPage() {
       toast.error(err.message || 'Erro ao cadastrar usuário.', { id: 'createUser' });
     }
   };
+
+  const handleResendAccess = async (email: string) => {
+    toast.loading('Reenviando link de acesso...', { id: 'resendAccess' });
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/login`, // Redireciona para a página de login após redefinição
+      });
+
+      if (error) {
+        console.error('Erro ao reenviar acesso:', error);
+        toast.error(error.message || 'Falha ao reenviar link de acesso.', { id: 'resendAccess' });
+      } else {
+        toast.success('Link de redefinição de senha enviado para o email!', { id: 'resendAccess' });
+      }
+    } catch (err: any) {
+      console.error('Erro inesperado ao reenviar acesso:', err);
+      toast.error('Erro inesperado ao reenviar link de acesso.', { id: 'resendAccess' });
+    }
+  };
+
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = searchTerm === '' ||
+                          user.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          user.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          user.auth_users.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRole = filterRole === 'All' || user.role === filterRole;
+    return matchesSearch && matchesRole;
+  });
 
   if (loading) {
     return (
@@ -262,8 +296,37 @@ export default function AdminUsersPage() {
           </button>
         </div>
 
+        {/* Filtros e Busca */}
+        <div className="bg-gray-900 p-6 rounded-xl shadow-lg border border-gray-700 mb-8 flex flex-col md:flex-row gap-4">
+          <div className="relative flex-grow">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Buscar por nome ou email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div className="relative">
+            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <select
+              value={filterRole}
+              onChange={(e) => setFilterRole(e.target.value as UserRole | 'All')}
+              className="w-full md:w-auto pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="All">Todas as Funções</option>
+              {UserSchema.shape.role.options.map((roleOption) => (
+                <option key={roleOption} value={roleOption}>
+                  {roleOption.charAt(0).toUpperCase() + roleOption.slice(1)}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         <div className="bg-gray-900 p-6 rounded-xl shadow-lg border border-gray-700">
-          {users.length === 0 ? (
+          {filteredUsers.length === 0 ? (
             <p className="text-center text-gray-400 text-lg">Nenhum usuário encontrado.</p>
           ) : (
             <div className="overflow-x-auto">
@@ -291,7 +354,7 @@ export default function AdminUsersPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-800">
-                  {users.map((user) => (
+                  {filteredUsers.map((user) => (
                     <tr key={user.id} className="hover:bg-gray-800 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
@@ -314,7 +377,11 @@ export default function AdminUsersPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                          user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
+                          user.role === 'client' ? 'bg-blue-100 text-blue-800' :
+                          user.role === 'dev' ? 'bg-green-100 text-green-800' :
+                          user.role === 'copywriter' ? 'bg-orange-100 text-orange-800' :
+                          'bg-yellow-100 text-yellow-800' // manager
                         }`}>
                           {user.role}
                         </span>
@@ -332,6 +399,20 @@ export default function AdminUsersPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button
+                          onClick={() => navigate(`/admin/projects-subscriptions?userId=${user.id}`)}
+                          className="text-cyan-400 hover:text-cyan-300 mr-4"
+                          title="Ver projetos deste usuário"
+                        >
+                          <FolderOpen className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => handleResendAccess(user.auth_users.email)}
+                          className="text-yellow-400 hover:text-yellow-300 mr-4"
+                          title="Reenviar acesso"
+                        >
+                          <Mail className="w-5 h-5" />
+                        </button>
                         <button
                           onClick={() => handleEditUser(user)}
                           className="text-blue-400 hover:text-blue-300 mr-4"
@@ -361,7 +442,7 @@ export default function AdminUsersPage() {
         <EditUserModal
           isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
-          user={editingUser}
+          user={{ ...editingUser, is_banned: !!editingUser.auth_users.banned_until }} // Passar is_banned corretamente
           onSave={handleSaveUser}
           currentAdminId={currentAdminId!}
         />

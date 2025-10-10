@@ -2,6 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, Save, User, Mail, Briefcase, Ban } from 'lucide-react';
+import { UserSchema } from '@/shared/types'; // Importar UserSchema para os tipos de role
+
+type UserRole = z.infer<typeof UserSchema.shape.role>; // Definir UserRole a partir do schema
 
 interface EditUserModalProps {
   isOpen: boolean;
@@ -11,10 +14,10 @@ interface EditUserModalProps {
     first_name: string | null;
     last_name: string | null;
     email: string;
-    role: 'client' | 'admin';
+    role: UserRole; // Usar o tipo UserRole
     is_banned: boolean;
   };
-  onSave: (userId: string, data: { first_name?: string; last_name?: string; email?: string; role?: 'client' | 'admin'; is_banned?: boolean }) => Promise<void>;
+  onSave: (userId: string, data: { first_name?: string; last_name?: string; email?: string; role?: UserRole; is_banned?: boolean }) => Promise<void>;
   currentAdminId: string; // ID do admin logado
 }
 
@@ -22,7 +25,7 @@ export default function EditUserModal({ isOpen, onClose, user, onSave, currentAd
   const [firstName, setFirstName] = useState(user.first_name || '');
   const [lastName, setLastName] = useState(user.last_name || '');
   const [email, setEmail] = useState(user.email);
-  const [role, setRole] = useState<'client' | 'admin'>(user.role);
+  const [role, setRole] = useState<UserRole>(user.role); // Usar o tipo UserRole
   const [isBanned, setIsBanned] = useState(user.is_banned);
   const [loading, setLoading] = useState(false);
 
@@ -126,12 +129,15 @@ export default function EditUserModal({ isOpen, onClose, user, onSave, currentAd
               <select
                 id="role"
                 value={role}
-                onChange={(e) => setRole(e.target.value as 'client' | 'admin')}
+                onChange={(e) => setRole(e.target.value as UserRole)}
                 disabled={isSelfEditing} // Admin não pode mudar a própria função
                 className={`w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${isSelfEditing ? 'opacity-60 cursor-not-allowed' : ''}`}
               >
-                <option value="client">Cliente</option>
-                <option value="admin">Administrador</option>
+                {UserSchema.shape.role.options.map((roleOption) => (
+                  <option key={roleOption} value={roleOption}>
+                    {roleOption.charAt(0).toUpperCase() + roleOption.slice(1)}
+                  </option>
+                ))}
               </select>
             </div>
             {isSelfEditing && <p className="text-sm text-gray-400 mt-2">Você não pode alterar sua própria função.</p>}
