@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { supabase } from '@/integrations/supabase/browserClient';
-import { LogOut, Users, Settings, BarChart2, FileText, ChevronLeft } from 'lucide-react';
+import { LogOut, Users, Settings, BarChart2, FileText, ChevronLeft, FolderOpen } from 'lucide-react'; // Importando FolderOpen
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -115,6 +115,19 @@ export default function AdminDashboard() {
             <button
               onClick={() => navigate('/admin/projects-subscriptions')}
               className="flex items-center gap-2 px-6 py-3 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-semibold transition-all duration-200"
+            >
+              Acessar <ChevronLeft className="w-5 h-5 rotate-180" />
+            </button>
+          </div>
+
+          {/* Card: Documentos do Projeto (PRD, Copy, IA Prompts) */}
+          <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-8 shadow-xl hover:border-orange-500/50 transition-all duration-300 transform hover:scale-105">
+            <FolderOpen className="w-12 h-12 text-orange-400 mb-4" />
+            <h3 className="text-2xl font-bold text-white mb-3">Documentos do Projeto</h3>
+            <p className="text-gray-300 mb-6">Gerencie PRDs, textos de copy e prompts para IA.</p>
+            <button
+              onClick={() => navigate('/admin/project-documents')}
+              className="flex items-center gap-2 px-6 py-3 rounded-full bg-orange-600 hover:bg-orange-700 text-white font-semibold transition-all duration-200"
             >
               Acessar <ChevronLeft className="w-5 h-5 rotate-180" />
             </button>
