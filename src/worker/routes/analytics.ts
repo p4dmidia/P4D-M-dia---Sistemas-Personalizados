@@ -96,8 +96,7 @@ analytics.get('/summary', adminOnly, async (c) => {
     // Projetos por Status
     const { data: projectsByStatus, error: statusError } = await supabaseAdmin
       .from('projects')
-      .select('status, count')
-      .rollup('count')
+      .select('status, count') // 'count' aqui é uma função agregada reconhecida pelo Supabase ao usar .group()
       .group('status');
     if (statusError) throw statusError;
     console.log('Analytics Summary: Projects by status fetched:', projectsByStatus);
