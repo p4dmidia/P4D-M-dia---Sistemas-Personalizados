@@ -3,19 +3,31 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { ChevronLeft, FileText, DollarSign, Code, Search, Check, Info, Edit, Trash2, ChevronDown } from 'lucide-react';
+import { ChevronLeft, FileText, DollarSign, Code, Search, Check, Info, Edit, Trash2, PlusCircle } from 'lucide-react';
 import { Project, Subscription } from '@/shared/types';
 import { supabase } from '@/integrations/supabase/browserClient';
-import EditProjectModal from '@/react-app/components/admin/EditProjectModal'; // Importar o novo modal
+import EditProjectModal from '@/react-app/components/admin/EditProjectModal';
+import CreateProjectModal from '@/react-app/components/admin/CreateProjectModal'; // Importar o novo modal
+import CreateSubscriptionModal from '@/react-app/components/admin/CreateSubscriptionModal'; // Importar o novo modal
+
+interface UserProfileForSelection {
+  id: string;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+}
 
 export default function AdminProjectsSubscriptionsPage() {
   const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [users, setUsers] = useState<UserProfileForSelection[]>([]); // Estado para armazenar usuários
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isEditProjectModalOpen, setIsEditProjectModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] = useState(false); // Estado para o modal de criação de projeto
+  const [isCreateSubscriptionModalOpen, setIsCreateSubscriptionModalOpen] = useState(false); // Estado para o modal de criação de assinatura
 
   const fetchData = async () => {
     setLoading(true);
@@ -27,6 +39,17 @@ export default function AdminProjectsSubscriptionsPage() {
         navigate('/login');
         return;
       }
+
+      // Fetch Users for dropdowns
+      const usersResponse = await fetch('/api/profiles', {
+        headers: { 'Authorization': `Bearer ${session.access_token}` },
+      });
+      if (!usersResponse.ok) {
+        const errorData = await usersResponse.json();
+        throw new Error(errorData.error || 'Falha ao buscar usuários para seleção.');
+      }
+      const usersData: any[] = await usersResponse.json(); // Use any[] for now, then map
+      setUsers(usersData.map(u => ({ id: u.id, email: u.auth_users.email, first_name: u.first_name, last_name: u.last_name })));
 
       // Fetch Projects
       const projectsResponse = await fetch('/api/projects', {
@@ -103,6 +126,38 @@ export default function AdminProjectsSubscriptionsPage() {
     }
   };
 
+  const handleCreateProject = async (data: Omit<Project, 'id' | 'created_at' | 'updated_at'>) => {
+    toast.loading('Criando novo projeto...', { id: 'createProject' });
+    try {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session || !session.access_token) {
+        toast.error('Sua sessão expirou. Por favor, faça login novamente.', { id: 'createProject' });
+        navigate('/login');
+        return;
+      }
+
+      const response = await fetch('/api/projects', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Falha ao criar projeto.');
+      }
+
+      toast.success('Projeto criado com sucesso!', { id: 'createProject' });
+      fetchData(); // Re-fetch data to update the list
+    } catch (err: any) {
+      console.error('Erro ao criar projeto:', err);
+      toast.error(err.message || 'Erro ao criar projeto.', { id: 'createProject' });
+    }
+  };
+
   const handleDeleteProject = async (projectId: string) => {
     if (!window.confirm('Tem certeza que deseja deletar este projeto? Esta ação é irreversível.')) {
       return;
@@ -134,6 +189,38 @@ export default function AdminProjectsSubscriptionsPage() {
     } catch (err: any) {
       console.error('Erro ao deletar projeto:', err);
       toast.error(err.message || 'Erro ao deletar projeto.', { id: 'deleteProject' });
+    }
+  };
+
+  const handleCreateSubscription = async (data: Omit<Subscription, 'id' | 'created_at' | 'updated_at'>) => {
+    toast.loading('Criando nova assinatura...', { id: 'createSubscription' });
+    try {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session || !session.access_token) {
+        toast.error('Sua sessão expirou. Por favor, faça login novamente.', { id: 'createSubscription' });
+        navigate('/login');
+        return;
+      }
+
+      const response = await fetch('/api/subscriptions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Falha ao criar assinatura.');
+      }
+
+      toast.success('Assinatura criada com sucesso!', { id: 'createSubscription' });
+      fetchData(); // Re-fetch data to update the list
+    } catch (err: any) {
+      console.error('Erro ao criar assinatura:', err);
+      toast.error(err.message || 'Erro ao criar assinatura.', { id: 'createSubscription' });
     }
   };
 
@@ -223,9 +310,18 @@ export default function AdminProjectsSubscriptionsPage() {
 
         {/* Seção de Projetos */}
         <div className="bg-gray-900 p-6 rounded-xl shadow-lg border border-gray-700 mb-12">
-          <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-            <FileText className="w-6 h-6 text-blue-400" /> Projetos
-          </h3>
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-2xl font-bold text-white flex items-center gap-3">
+              <FileText className="w-6 h-6 text-blue-400" /> Projetos
+            </h3>
+            <button
+              onClick={() => setIsCreateProjectModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-all duration-200 shadow-lg"
+            >
+              <PlusCircle className="w-5 h-5" />
+              Novo Projeto
+            </button>
+          </div>
           {projects.length === 0 ? (
             <p className="text-center text-gray-400 text-lg">Nenhum projeto encontrado.</p>
           ) : (
@@ -295,9 +391,18 @@ export default function AdminProjectsSubscriptionsPage() {
 
         {/* Seção de Assinaturas */}
         <div className="bg-gray-900 p-6 rounded-xl shadow-lg border border-gray-700">
-          <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-            <DollarSign className="w-6 h-6 text-purple-400" /> Assinaturas
-          </h3>
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-2xl font-bold text-white flex items-center gap-3">
+              <DollarSign className="w-6 h-6 text-purple-400" /> Assinaturas
+            </h3>
+            <button
+              onClick={() => setIsCreateSubscriptionModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-semibold transition-all duration-200 shadow-lg"
+            >
+              <PlusCircle className="w-5 h-5" />
+              Nova Assinatura
+            </button>
+          </div>
           {subscriptions.length === 0 ? (
             <p className="text-center text-gray-400 text-lg">Nenhuma assinatura encontrada.</p>
           ) : (
@@ -378,6 +483,20 @@ export default function AdminProjectsSubscriptionsPage() {
           onSave={handleSaveProject}
         />
       )}
+
+      <CreateProjectModal
+        isOpen={isCreateProjectModalOpen}
+        onClose={() => setIsCreateProjectModalOpen(false)}
+        onCreate={handleCreateProject}
+        users={users}
+      />
+
+      <CreateSubscriptionModal
+        isOpen={isCreateSubscriptionModalOpen}
+        onClose={() => setIsCreateSubscriptionModalOpen(false)}
+        onCreate={handleCreateSubscription}
+        users={users}
+      />
     </div>
   );
 }
