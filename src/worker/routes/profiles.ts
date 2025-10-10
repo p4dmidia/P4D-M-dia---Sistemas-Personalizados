@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { zValidator } from '@hono/zod-validator';
 import { UserSchema } from '@/shared/types'; // Reutilizando UserSchema para validação de perfil
+import { z } from 'zod';
 
 type Bindings = {
   SUPABASE_URL: string;
@@ -65,7 +66,7 @@ const adminOnly = async (c: any, next: any) => {
 profiles.get('/', adminOnly, async (c) => {
   const supabaseAdmin = c.get('supabaseAdmin');
   try {
-    // Primeiro, busca todos os perfis da tabela 'profiles'
+    // Seleciona dados do perfil e faz um join com a tabela auth.users para obter o email
     const { data: profilesData, error: profilesError } = await supabaseAdmin
       .from('profiles')
       .select('id, first_name, last_name, avatar_url, role, updated_at, asaas_customer_id');
@@ -75,19 +76,20 @@ profiles.get('/', adminOnly, async (c) => {
       return c.json({ error: 'Failed to fetch profiles' }, 500);
     }
 
-    // Para cada perfil, busca os dados do usuário (email, created_at) da tabela auth.users
+    // Para cada perfil, busca os dados do usuário (email, created_at, banned_until) da tabela auth.users
     const usersWithAuthDetails = await Promise.all(profilesData.map(async (profile) => {
       const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(profile.id);
       if (userError) {
         console.error(`Error fetching auth user for profile ${profile.id}:`, userError);
         // Retorna um fallback se não conseguir buscar os dados de autenticação
-        return { ...profile, auth_users: { email: 'N/A', created_at: 'N/A' } };
+        return { ...profile, auth_users: { email: 'N/A', created_at: 'N/A', banned_until: null } };
       }
       return {
         ...profile,
         auth_users: {
           email: userData.user?.email || 'N/A',
           created_at: userData.user?.created_at || 'N/A',
+          banned_until: userData.user?.banned_until || null,
         },
       };
     }));
@@ -99,32 +101,112 @@ profiles.get('/', adminOnly, async (c) => {
   }
 });
 
+// Criar um novo usuário (apenas para administradores)
+profiles.post(
+  '/',
+  adminOnly,
+  zValidator('json', UserSchema.pick({ email: true, password: true, name: true, role: true })),
+  async (c) => {
+    const { email, password, name, role } = c.req.valid('json');
+    const supabaseAdmin = c.get('supabaseAdmin');
+
+    if (!password) {
+      return c.json({ error: 'Password is required' }, 400);
+    }
+
+    try {
+      const { data, error } = await supabaseAdmin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true, // Confirma o email automaticamente para admin-created users
+        user_metadata: { first_name: name },
+      });
+
+      if (error) {
+        console.error('Supabase admin create user error:', error);
+        return c.json({ error: error.message || 'Failed to create user' }, 400);
+      }
+
+      // Atualiza o perfil para definir o role
+      const { error: profileError } = await supabaseAdmin
+        .from('profiles')
+        .update({ first_name: name, role: role || 'client', updated_at: new Date().toISOString() })
+        .eq('id', data.user.id);
+
+      if (profileError) {
+        console.error('Supabase update profile role error:', profileError);
+        // Se falhar ao atualizar o perfil, ainda assim o usuário foi criado no auth.users
+        return c.json({ error: 'User created, but failed to set profile role' }, 500);
+      }
+
+      return c.json({ message: 'User created successfully', userId: data.user.id }, 201);
+    } catch (error) {
+      console.error('Error creating user:', error);
+      return c.json({ error: 'Failed to create user' }, 500);
+    }
+  }
+);
+
 // Atualizar um perfil (apenas para administradores)
 profiles.put(
   '/:id',
   adminOnly,
-  zValidator('json', UserSchema.partial().omit({ id: true, created_at: true, password: true, password_hash: true })),
+  zValidator('json', z.object({
+    first_name: z.string().optional(),
+    last_name: z.string().optional(),
+    email: z.string().email().optional(),
+    role: z.enum(['client', 'admin']).optional(),
+    is_banned: z.boolean().optional(), // Para bloquear/desbloquear
+  })),
   async (c) => {
     const profileId = c.req.param('id');
     const updateData = c.req.valid('json');
     const supabaseAdmin = c.get('supabaseAdmin');
 
     try {
-      const { data, error } = await supabaseAdmin
+      // 1. Atualizar a tabela 'profiles'
+      const profileUpdatePayload: { first_name?: string; last_name?: string; role?: 'client' | 'admin'; updated_at: string } = {
+        updated_at: new Date().toISOString(),
+      };
+      if (updateData.first_name !== undefined) profileUpdatePayload.first_name = updateData.first_name;
+      if (updateData.last_name !== undefined) profileUpdatePayload.last_name = updateData.last_name;
+      if (updateData.role !== undefined) profileUpdatePayload.role = updateData.role;
+
+      const { data: updatedProfile, error: profileError } = await supabaseAdmin
         .from('profiles')
-        .update({ ...updateData, updated_at: new Date().toISOString() })
+        .update(profileUpdatePayload)
         .eq('id', profileId)
         .select()
         .single();
 
-      if (error) {
-        console.error('Supabase update profile error:', error);
+      if (profileError && profileError.code !== 'PGRST116') {
+        console.error('Supabase update profile error:', profileError);
         return c.json({ error: 'Failed to update profile' }, 500);
       }
-      if (!data) {
-        return c.json({ error: 'Profile not found' }, 404);
+
+      // 2. Atualizar a tabela 'auth.users'
+      const userUpdatePayload: { email?: string; banned_until?: string | null; user_metadata?: { first_name?: string } } = {};
+      if (updateData.email !== undefined) userUpdatePayload.email = updateData.email;
+      if (updateData.is_banned !== undefined) {
+        userUpdatePayload.banned_until = updateData.is_banned ? new Date(8640000000000000).toISOString() : null; // Bloqueia indefinidamente ou desbloqueia
       }
-      return c.json(data, 200);
+      if (updateData.first_name !== undefined) { // Atualiza user_metadata também
+        userUpdatePayload.user_metadata = { first_name: updateData.first_name };
+      }
+
+      const { data: updatedUserAuth, error: userAuthError } = await supabaseAdmin.auth.admin.updateUserById(
+        profileId,
+        userUpdatePayload
+      );
+
+      if (userAuthError) {
+        console.error('Supabase update auth user error:', userAuthError);
+        // Se a atualização do auth.users falhar, ainda retornamos o perfil atualizado se ele foi bem-sucedido
+        return c.json({ error: 'Failed to update user authentication data', profile: updatedProfile }, 500);
+      }
+
+      // Retorna o perfil atualizado e os dados de autenticação
+      return c.json({ ...updatedProfile, auth_users: { email: updatedUserAuth.user?.email, banned_until: updatedUserAuth.user?.banned_until } }, 200);
     } catch (error) {
       console.error('Error updating profile:', error);
       return c.json({ error: 'Internal server error' }, 500);
@@ -138,18 +220,15 @@ profiles.delete('/:id', adminOnly, async (c) => {
   const supabaseAdmin = c.get('supabaseAdmin');
 
   try {
-    const { error } = await supabaseAdmin
-      .from('profiles')
-      .delete()
-      .eq('id', profileId);
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(profileId);
 
     if (error) {
-      console.error('Supabase delete profile error:', error);
-      return c.json({ error: 'Failed to delete profile' }, 500);
+      console.error('Supabase delete user error:', error);
+      return c.json({ error: 'Failed to delete user' }, 500);
     }
-    return c.json({ message: 'Profile deleted successfully' }, 204);
+    return c.json({ message: 'User deleted successfully' }, 204);
   } catch (error) {
-    console.error('Error deleting profile:', error);
+    console.error('Error deleting user:', error);
     return c.json({ error: 'Internal server error' }, 500);
   }
 });
