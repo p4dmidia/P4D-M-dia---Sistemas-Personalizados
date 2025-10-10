@@ -33,6 +33,7 @@ export default function AdminUsersPage() {
   console.log('AdminUsersPage rendering...'); // Log para depuração
   const navigate = useNavigate();
   const [users, setUsers] = useState<UserProfile[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<UserProfile[]>([]); // Agora é um estado
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -91,6 +92,30 @@ export default function AdminUsersPage() {
   useEffect(() => {
     fetchUsers();
   }, [navigate]);
+
+  // Efeito para atualizar filteredUsers sempre que users, searchTerm ou filterRole mudarem
+  useEffect(() => {
+    const applyFilters = () => {
+      const filtered = users.filter(user => {
+        const fullName = `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase();
+        const email = user.auth_users.email.toLowerCase();
+        const role = user.role.toLowerCase();
+        const status = getUserStatus(user).text.toLowerCase();
+
+        const matchesSearch = searchTerm === '' ||
+                              fullName.includes(searchTerm.toLowerCase()) ||
+                              email.includes(searchTerm.toLowerCase()) ||
+                              role.includes(searchTerm.toLowerCase()) ||
+                              status.includes(searchTerm.toLowerCase());
+                              
+        const matchesRole = filterRole === 'All' || user.role === filterRole;
+        return matchesSearch && matchesRole;
+      });
+      setFilteredUsers(filtered);
+    };
+
+    applyFilters();
+  }, [users, searchTerm, filterRole]); // Recalcular quando essas dependências mudarem
 
   const handleEditUser = (user: UserProfile) => {
     setEditingUser({
@@ -316,22 +341,6 @@ export default function AdminUsersPage() {
     return { text: 'Ativo', color: 'bg-green-100 text-green-800', icon: <CheckCircle2 className="w-4 h-4" /> };
   };
 
-  const filteredUsers = users.filter(user => {
-    const fullName = `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase();
-    const email = user.auth_users.email.toLowerCase();
-    const role = user.role.toLowerCase();
-    const status = getUserStatus(user).text.toLowerCase();
-
-    const matchesSearch = searchTerm === '' ||
-                          fullName.includes(searchTerm.toLowerCase()) ||
-                          email.includes(searchTerm.toLowerCase()) ||
-                          role.includes(searchTerm.toLowerCase()) ||
-                          status.includes(searchTerm.toLowerCase());
-                          
-    const matchesRole = filterRole === 'All' || user.role === filterRole;
-    return matchesSearch && matchesRole;
-  });
-
   console.log('AdminUsersPage: users state (before render):', users);
   console.log('AdminUsersPage: filteredUsers value (before render):', filteredUsers);
 
@@ -438,7 +447,7 @@ export default function AdminUsersPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-800">
-                  {Array.isArray(filteredUsers) && filteredUsers.map((user) => {
+                  {filteredUsers.map((user) => {
                     const userStatus = getUserStatus(user);
                     const isSelf = user.id === currentAdminId;
                     return (
