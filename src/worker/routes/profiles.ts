@@ -65,16 +65,34 @@ const adminOnly = async (c: any, next: any) => {
 profiles.get('/', adminOnly, async (c) => {
   const supabaseAdmin = c.get('supabaseAdmin');
   try {
-    // Seleciona dados do perfil e faz um join com a tabela auth.users para obter o email
-    const { data, error } = await supabaseAdmin
+    // Primeiro, busca todos os perfis da tabela 'profiles'
+    const { data: profilesData, error: profilesError } = await supabaseAdmin
       .from('profiles')
-      .select('id, first_name, last_name, avatar_url, role, updated_at, asaas_customer_id, auth_users(email, created_at)');
+      .select('id, first_name, last_name, avatar_url, role, updated_at, asaas_customer_id');
 
-    if (error) {
-      console.error('Supabase fetch all profiles error:', error);
+    if (profilesError) {
+      console.error('Supabase fetch all profiles error:', profilesError);
       return c.json({ error: 'Failed to fetch profiles' }, 500);
     }
-    return c.json(data, 200);
+
+    // Para cada perfil, busca os dados do usuário (email, created_at) da tabela auth.users
+    const usersWithAuthDetails = await Promise.all(profilesData.map(async (profile) => {
+      const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(profile.id);
+      if (userError) {
+        console.error(`Error fetching auth user for profile ${profile.id}:`, userError);
+        // Retorna um fallback se não conseguir buscar os dados de autenticação
+        return { ...profile, auth_users: { email: 'N/A', created_at: 'N/A' } };
+      }
+      return {
+        ...profile,
+        auth_users: {
+          email: userData.user?.email || 'N/A',
+          created_at: userData.user?.created_at || 'N/A',
+        },
+      };
+    }));
+
+    return c.json(usersWithAuthDetails, 200);
   } catch (error) {
     console.error('Error fetching all profiles:', error);
     return c.json({ error: 'Internal server error' }, 500);
