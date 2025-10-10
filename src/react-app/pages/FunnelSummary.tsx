@@ -6,6 +6,7 @@ import { Check, Star } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '@/integrations/supabase/browserClient'; // Import supabase client
 import { FunnelResponse } from '@/shared/types'; // Import FunnelResponse type
+import { funnelSteps } from '@/react-app/pages/Funnel'; // Import funnelSteps from Funnel.tsx
 
 interface FunnelSummaryState {
   formData: Record<string, any>;
@@ -22,6 +23,16 @@ export default function FunnelSummary() {
   const [recommendedPlan, setRecommendedPlan] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null); // Track user ID
+
+  // Helper function to get the label for a given value and step ID
+  const getOptionLabel = (stepId: string, value: string): string => {
+    const step = funnelSteps.find(s => s.id === stepId);
+    if (step && step.options) {
+      const option = step.options.find(o => o.value === value);
+      return option ? option.label : value; // Return label if found, otherwise the raw value
+    }
+    return value;
+  };
 
   // Placeholder for plans (should ideally come from an API)
   const plans = [
@@ -197,18 +208,30 @@ export default function FunnelSummary() {
   useEffect(() => {
     if (!loading) { // Only generate summary once loading is complete
       const generateSummaryAndRecommendPlan = () => {
-        const businessType = formData.business_type || 'seu negócio';
-        // Ensure systemGoal and desiredFeatures are always strings before calling methods
-        const systemGoal = Array.isArray(formData.system_goal) 
-          ? formData.system_goal.join(', ').toLowerCase() 
-          : (formData.system_goal || '').toLowerCase();
-        const desiredFeatures = Array.isArray(formData.desired_features) 
-          ? formData.desired_features.join(', ').toLowerCase() 
-          : (formData.desired_features || '').toLowerCase();
-        const companyName = formData.company_name || 'sua empresa';
+        const businessTypeRaw = formData.business_type;
+        const businessType = businessTypeRaw ? getOptionLabel('business_type', businessTypeRaw) : 'seu negócio';
 
-        let generatedSummary = `Perfeito! Vamos criar um sistema para ${companyName} com foco em ${systemGoal || 'otimizar suas operações'}.`;
-        generatedSummary += ` Ele incluirá funcionalidades como: ${desiredFeatures || 'as que você descreveu'}.`;
+        const systemGoalRaw = Array.isArray(formData.system_goal) ? formData.system_goal : [];
+        const systemGoal = systemGoalRaw.length > 0
+          ? systemGoalRaw.map((val: string) => getOptionLabel('system_goal', val)).join(', ').toLowerCase()
+          : 'otimizar suas operações';
+
+        const desiredFeaturesRaw = Array.isArray(formData.desired_features) ? formData.desired_features : [];
+        const desiredFeatures = desiredFeaturesRaw.length > 0
+          ? desiredFeaturesRaw.map((val: string) => getOptionLabel('desired_features', val)).join(', ').toLowerCase()
+          : 'as funcionalidades que você descreveu';
+        
+        const visualIdentity = formData.visual_identity;
+        const additionalNotes = formData.additional_notes;
+
+        let generatedSummary = `Perfeito! Vamos criar um sistema para ${businessType} com foco em ${systemGoal}.`;
+        generatedSummary += ` Ele incluirá funcionalidades como: ${desiredFeatures}.`;
+        if (visualIdentity) {
+          generatedSummary += ` Sua identidade visual terá como base: ${visualIdentity}.`;
+        }
+        if (additionalNotes) {
+          generatedSummary += ` Observações adicionais: ${additionalNotes}.`;
+        }
         generatedSummary += ` Entrega estimada em até 7 dias úteis (pode variar conforme complexidade).`;
         generatedSummary += ` Seu sistema virá hospedado, otimizado e com suporte direto via WhatsApp.`;
 
@@ -220,15 +243,16 @@ export default function FunnelSummary() {
         setSummaryText(generatedSummary);
 
         let recommended = plans[0]; // Default to Site Institucional
-        if (desiredFeatures.includes('e-commerce') || businessType.includes('e-commerce')) {
+        // Logic for plan recommendation based on translated features
+        if (desiredFeaturesRaw.includes('e-commerce') || businessTypeRaw === 'e-commerce') {
           recommended = plans[1];
-        } else if (businessType.includes('restaurant')) {
+        } else if (businessTypeRaw === 'restaurant') {
           recommended = plans[2];
-        } else if (desiredFeatures.includes('affiliate') || desiredFeatures.includes('assinatura') || desiredFeatures.includes('pontos')) {
+        } else if (desiredFeaturesRaw.includes('affiliate_system') || desiredFeaturesRaw.includes('subscription_club') || desiredFeaturesRaw.includes('loyalty_program')) {
           recommended = plans[3];
-        } else if (desiredFeatures.includes('crm') || desiredFeatures.includes('interno')) {
+        } else if (desiredFeaturesRaw.includes('crm_features') || desiredFeaturesRaw.includes('internal_systems')) { // Assuming 'internal_systems' is a possible raw value
           recommended = plans[4];
-        } else if (desiredFeatures.includes('inteligência artificial')) {
+        } else if (desiredFeaturesRaw.includes('ai_integration')) {
           recommended = plans[5];
         }
         setRecommendedPlan(recommended.name);

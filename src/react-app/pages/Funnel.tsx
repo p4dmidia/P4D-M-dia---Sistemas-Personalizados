@@ -19,7 +19,7 @@ interface FunnelStep {
   allowMultiple?: boolean;
 }
 
-const funnelSteps: FunnelStep[] = [
+export const funnelSteps: FunnelStep[] = [ // Exported funnelSteps
   {
     id: 'business_type',
     title: 'Sobre o seu negócio',
