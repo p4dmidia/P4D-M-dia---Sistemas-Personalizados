@@ -43,8 +43,10 @@ analytics.use('*', async (c, next) => {
         return c.json({ error: 'Failed to fetch user profile' }, 500);
       }
       c.set('userRole', profile?.role || 'client');
+      console.log('Analytics Middleware: User ID:', user.id, 'Role:', c.get('userRole'));
     }
   } else {
+    console.log('Analytics Middleware: Authorization header missing.');
     return c.json({ error: 'Authorization header missing' }, 401);
   }
   await next();
@@ -54,8 +56,10 @@ analytics.use('*', async (c, next) => {
 const adminOnly = async (c: any, next: any) => {
   const userRole = c.get('userRole');
   if (userRole !== 'admin') {
+    console.log('AdminOnly Middleware: Access denied for role:', userRole);
     return c.json({ error: 'Forbidden: Admin access required' }, 403);
   }
+  console.log('AdminOnly Middleware: Access granted for admin.');
   await next();
 };
 
@@ -63,25 +67,32 @@ const adminOnly = async (c: any, next: any) => {
 analytics.get('/summary', adminOnly, async (c) => {
   const supabaseAdmin = c.get('supabaseAdmin');
   try {
+    console.log('Analytics Summary: Fetching total users...');
     // Total de Usuários
     const { count: totalUsers, error: usersError } = await supabaseAdmin
       .from('profiles')
       .select('id', { count: 'exact' });
     if (usersError) throw usersError;
+    console.log('Analytics Summary: Total users fetched:', totalUsers);
 
+    console.log('Analytics Summary: Fetching total projects...');
     // Total de Projetos
     const { count: totalProjects, error: projectsError } = await supabaseAdmin
       .from('projects')
       .select('id', { count: 'exact' });
     if (projectsError) throw projectsError;
+    console.log('Analytics Summary: Total projects fetched:', totalProjects);
 
+    console.log('Analytics Summary: Fetching active subscriptions...');
     // Assinaturas Ativas
     const { count: activeSubscriptions, error: subscriptionsError } = await supabaseAdmin
       .from('subscriptions')
       .select('id', { count: 'exact' })
       .eq('status', 'active');
     if (subscriptionsError) throw subscriptionsError;
+    console.log('Analytics Summary: Active subscriptions fetched:', activeSubscriptions);
 
+    console.log('Analytics Summary: Fetching projects by status...');
     // Projetos por Status
     const { data: projectsByStatus, error: statusError } = await supabaseAdmin
       .from('projects')
@@ -89,6 +100,7 @@ analytics.get('/summary', adminOnly, async (c) => {
       .rollup('count')
       .group('status');
     if (statusError) throw statusError;
+    console.log('Analytics Summary: Projects by status fetched:', projectsByStatus);
 
     return c.json({
       totalUsers,
@@ -97,9 +109,9 @@ analytics.get('/summary', adminOnly, async (c) => {
       projectsByStatus: projectsByStatus || [],
     }, 200);
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching analytics summary:', error);
-    return c.json({ error: 'Failed to fetch analytics summary' }, 500);
+    return c.json({ error: error.message || 'Failed to fetch analytics summary' }, 500);
   }
 });
 
