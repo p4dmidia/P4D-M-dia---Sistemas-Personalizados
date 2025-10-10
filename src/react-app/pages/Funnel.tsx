@@ -91,24 +91,23 @@ export default function Funnel() {
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [funnelId, setFunnelId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [userId, setUserId] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null | undefined>(undefined); // Use undefined initially to indicate "not yet checked"
 
   const currentStep = funnelSteps[currentStepIndex]; // Define currentStep here
 
   useEffect(() => {
     const getSession = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      setUserId(user?.id || null);
+      setUserId(user?.id || null); // Set to null if no user
     };
     getSession();
 
-    // Correctly destructure the subscription object
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUserId(session?.user?.id || null);
     });
 
     return () => {
-      subscription.unsubscribe(); // Correctly unsubscribe
+      subscription.unsubscribe();
     };
   }, []);
 
@@ -118,7 +117,7 @@ export default function Funnel() {
       if (funnelId) {
         // Update existing funnel response
         const updatePayload = {
-          user_id: userId,
+          user_id: userId, // Can be null for anonymous
           step_data: dataToSave,
           current_step: step,
           completed: completed,
@@ -133,7 +132,7 @@ export default function Funnel() {
       } else {
         // Insert new funnel response
         const insertPayload = {
-          user_id: userId,
+          user_id: userId, // Can be null for anonymous
           step_data: dataToSave,
           current_step: step,
           completed: completed,
@@ -159,22 +158,15 @@ export default function Funnel() {
     }
   }, [funnelId, userId]);
 
-  // Load existing funnel data on component mount
+  // Load existing funnel data on component mount or when userId is determined
   useEffect(() => {
     const loadFunnelData = async () => {
       setLoading(true);
       try {
         let funnelResponse: FunnelResponse | null = null;
 
-        if (funnelId) {
-          const { data, error } = await supabase
-            .from('funnel_responses')
-            .select('*')
-            .eq('id', funnelId)
-            .single();
-          if (error && error.code !== 'PGRST116') throw error;
-          funnelResponse = data;
-        } else if (userId) {
+        // Only try to load user-specific funnel if userId is available
+        if (userId) {
           const { data, error } = await supabase
             .from('funnel_responses')
             .select('*')
@@ -192,6 +184,8 @@ export default function Funnel() {
           setFormData(funnelResponse.step_data);
           setCurrentStepIndex(funnelResponse.current_step);
         } else {
+          // No existing funnel found for authenticated user, or user is anonymous.
+          // Start a new funnel.
           setFunnelId(null);
           setFormData({});
           setCurrentStepIndex(0);
@@ -203,11 +197,12 @@ export default function Funnel() {
         setFormData({});
         setCurrentStepIndex(0);
       } finally {
-        setLoading(false);
+        setLoading(false); // Always set loading to false here
       }
     };
 
-    if (userId !== null) { // Only run once userId is determined (not null, not undefined)
+    // Only run loadFunnelData once userId has been definitively set (either to a string or null)
+    if (userId !== undefined) {
       loadFunnelData();
     }
   }, [funnelId, userId]); // Re-run if funnelId or userId changes
