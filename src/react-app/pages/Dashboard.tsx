@@ -130,7 +130,7 @@ export default function Dashboard() {
     } finally {
       setLoading(false); // Garantir que o loading seja sempre definido como false
     }
-  }, [navigate, subscriptions]); // Adicionado subscriptions às dependências
+  }, [navigate]); // Removido 'subscriptions' das dependências
 
   useEffect(() => {
     fetchDashboardData();
@@ -279,7 +279,7 @@ export default function Dashboard() {
               {isAvatarMenuOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-gray-100 border border-gray-200 rounded-lg shadow-lg py-1 z-10">
                   {userProfile?.role === 'admin' && (
-                    <button onClick={() => { navigate('/admin/dashboard'); setIsAvatarMenuMenuOpen(false); }} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-200 w-full text-left">
+                    <button onClick={() => { navigate('/admin/dashboard'); setIsAvatarMenuOpen(false); }} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-200 w-full text-left">
                       <LayoutDashboard className="inline-block w-4 h-4 mr-2" /> Painel Admin
                     </button>
                   )}
