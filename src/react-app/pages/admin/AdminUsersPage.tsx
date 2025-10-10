@@ -287,10 +287,10 @@ export default function AdminUsersPage() {
     return { text: 'Ativo', color: 'bg-green-100 text-green-800', icon: <CheckCircle2 className="w-4 h-4" /> };
   };
 
-  const filteredUsers = useMemo(() => {
+  const memoizedFilteredUsers = useMemo(() => {
     // Ensure users is always an array before filtering
     if (!Array.isArray(users)) {
-      console.error("Unexpected: 'users' state is not an array in useMemo. This should not happen.");
+      console.error("Users state is not an array, returning empty array for memoizedFilteredUsers.");
       return [];
     }
 
@@ -334,7 +334,7 @@ export default function AdminUsersPage() {
   }
 
   // Log para depuração antes da renderização da tabela
-  console.log("Rendering AdminUsersPage. filteredUsers:", filteredUsers);
+  console.log("Rendering AdminUsersPage. memoizedFilteredUsers:", memoizedFilteredUsers);
 
   return (
     <div className="min-h-screen bg-gray-950 text-white font-sans p-8">
@@ -389,8 +389,7 @@ export default function AdminUsersPage() {
         </div>
 
         <div className="bg-gray-900 p-6 rounded-xl shadow-lg border border-gray-700">
-          {/* Adicionando verificação Array.isArray aqui */}
-          {Array.isArray(filteredUsers) && filteredUsers.length === 0 ? (
+          {memoizedFilteredUsers.length === 0 ? (
             <p className="text-center text-gray-400 text-lg">Nenhum usuário encontrado.</p>
           ) : (
             <div className="overflow-x-auto">
@@ -418,8 +417,7 @@ export default function AdminUsersPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-800">
-                  {/* Linha 373: Adicionando verificação Array.isArray */}
-                  {Array.isArray(filteredUsers) && filteredUsers.map((user) => {
+                  {memoizedFilteredUsers.map((user) => {
                     const userStatus = getUserStatus(user);
                     const isSelf = user.id === currentAdminId;
                     return (
