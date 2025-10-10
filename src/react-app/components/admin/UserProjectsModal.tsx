@@ -42,7 +42,6 @@ export default function UserProjectsModal({ isOpen, onClose, userId, userName }:
           return;
         }
 
-        // Chamar a API com o parâmetro userId
         const response = await fetch(`/api/projects?userId=${userId}`, {
           headers: { 'Authorization': `Bearer ${session.access_token}` },
         });

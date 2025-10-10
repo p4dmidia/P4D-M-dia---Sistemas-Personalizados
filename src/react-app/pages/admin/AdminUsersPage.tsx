@@ -67,7 +67,7 @@ export default function AdminUsersPage() {
       }
 
       const data: UserProfile[] = await response.json();
-      setUsers(Array.isArray(data) ? data : []); // Ensure it's always an array
+      setUsers(Array.isArray(data) ? data : []);
     } catch (err: any) {
       console.error('Erro ao buscar usuários:', err);
       setError(err.message || 'Erro ao carregar usuários.');
@@ -303,7 +303,7 @@ export default function AdminUsersPage() {
       const matchesRole = filterRole === 'All' || user.role === filterRole;
       return matchesSearch && matchesRole;
     });
-  }, [users, searchTerm, filterRole, currentAdminId]); // Dependências para useMemo
+  }, [users, searchTerm, filterRole, currentAdminId]);
 
   if (loading) {
     return (
