@@ -105,7 +105,12 @@ profiles.get('/', adminOnly, async (c) => {
 profiles.post(
   '/',
   adminOnly,
-  zValidator('json', UserSchema.pick({ email: true, password: true, name: true, role: true })),
+  zValidator('json', z.object({
+    email: z.string().email(),
+    password: z.string().min(6), // Supabase default min password length is 6
+    name: z.string().optional(), // Make name optional here
+    role: z.enum(['client', 'admin']).default('client'),
+  })),
   async (c) => {
     const { email, password, name, role } = c.req.valid('json');
     const supabaseAdmin = c.get('supabaseAdmin');
@@ -224,7 +229,7 @@ profiles.delete('/:id', adminOnly, async (c) => {
 
     if (error) {
       console.error('Supabase delete user error:', error);
-      return c.json({ error: 'Failed to delete user' }, 500);
+      return c.json({ error: error.message || 'Failed to delete user' }, 500);
     }
     return c.json({ message: 'User deleted successfully' }, 204);
   } catch (error) {

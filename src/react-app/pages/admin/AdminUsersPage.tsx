@@ -52,8 +52,14 @@ export default function AdminUsersPage() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Falha ao buscar usuários.');
+        let errorDetails = 'Falha ao buscar usuários.';
+        try {
+          const errorData = await response.json();
+          errorDetails = errorData.error || JSON.stringify(errorData);
+        } catch (jsonError) {
+          errorDetails = response.statusText || 'Erro desconhecido ao buscar usuários.';
+        }
+        throw new Error(errorDetails);
       }
 
       const data: UserProfile[] = await response.json();
@@ -103,8 +109,14 @@ export default function AdminUsersPage() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Falha ao salvar usuário.');
+        let errorDetails = 'Falha ao salvar usuário.';
+        try {
+          const errorData = await response.json();
+          errorDetails = errorData.error || JSON.stringify(errorData);
+        } catch (jsonError) {
+          errorDetails = response.statusText || 'Erro desconhecido ao salvar usuário.';
+        }
+        throw new Error(errorDetails);
       }
 
       toast.success('Usuário salvo com sucesso!', { id: 'saveUser' });
@@ -142,8 +154,14 @@ export default function AdminUsersPage() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Falha ao deletar usuário.');
+        let errorDetails = 'Falha ao deletar usuário.';
+        try {
+          const errorData = await response.json();
+          errorDetails = errorData.error || JSON.stringify(errorData);
+        } catch (jsonError) {
+          errorDetails = response.statusText || 'Erro desconhecido ao deletar usuário.';
+        }
+        throw new Error(errorDetails);
       }
 
       setUsers(prevUsers => prevUsers.filter(user => user.id !== userId));
@@ -181,8 +199,14 @@ export default function AdminUsersPage() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Falha ao cadastrar usuário.');
+        let errorDetails = 'Falha ao cadastrar usuário.';
+        try {
+          const errorData = await response.json();
+          errorDetails = errorData.error || JSON.stringify(errorData);
+        } catch (jsonError) {
+          errorDetails = response.statusText || 'Erro desconhecido ao cadastrar usuário.';
+        }
+        throw new Error(errorDetails);
       }
 
       toast.success('Usuário cadastrado com sucesso!', { id: 'createUser' });
