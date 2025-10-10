@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, User, Mail, Briefcase, Ban } from 'lucide-react';
 import { UserSchema } from '@/shared/types'; // Importar UserSchema para os tipos de role
+import { z } from 'zod'; // Adicionado: Importar z do zod
 
 type UserRole = z.infer<typeof UserSchema.shape.role>; // Definir UserRole a partir do schema
 

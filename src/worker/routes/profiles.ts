@@ -239,7 +239,8 @@ profiles.delete('/:id', adminOnly, async (c) => {
   } catch (error) {
     console.error('Error deleting user:', error);
     return c.json({ error: 'Internal server error' }, 500);
+    }
   }
-});
+);
 
 export default profiles;
