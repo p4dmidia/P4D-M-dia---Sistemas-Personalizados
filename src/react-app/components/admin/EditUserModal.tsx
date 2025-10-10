@@ -2,10 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, Save, User, Mail, Briefcase, Ban } from 'lucide-react';
-import { UserSchema } from '@/shared/types';
-import { z } from 'zod';
-
-type UserRole = z.infer<typeof UserSchema.shape.role>;
 
 interface EditUserModalProps {
   isOpen: boolean;
@@ -15,18 +11,18 @@ interface EditUserModalProps {
     first_name: string | null;
     last_name: string | null;
     email: string;
-    role: UserRole;
+    role: 'client' | 'admin';
     is_banned: boolean;
   };
-  onSave: (userId: string, data: { first_name?: string; last_name?: string; email?: string; role?: UserRole; is_banned?: boolean }) => Promise<void>;
-  currentAdminId: string;
+  onSave: (userId: string, data: { first_name?: string; last_name?: string; email?: string; role?: 'client' | 'admin'; is_banned?: boolean }) => Promise<void>;
+  currentAdminId: string; // ID do admin logado
 }
 
 export default function EditUserModal({ isOpen, onClose, user, onSave, currentAdminId }: EditUserModalProps) {
   const [firstName, setFirstName] = useState(user.first_name || '');
   const [lastName, setLastName] = useState(user.last_name || '');
   const [email, setEmail] = useState(user.email);
-  const [role, setRole] = useState<UserRole>(user.role);
+  const [role, setRole] = useState<'client' | 'admin'>(user.role);
   const [isBanned, setIsBanned] = useState(user.is_banned);
   const [loading, setLoading] = useState(false);
 
@@ -130,15 +126,12 @@ export default function EditUserModal({ isOpen, onClose, user, onSave, currentAd
               <select
                 id="role"
                 value={role}
-                onChange={(e) => setRole(e.target.value as UserRole)}
-                disabled={isSelfEditing}
+                onChange={(e) => setRole(e.target.value as 'client' | 'admin')}
+                disabled={isSelfEditing} // Admin não pode mudar a própria função
                 className={`w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${isSelfEditing ? 'opacity-60 cursor-not-allowed' : ''}`}
               >
-                {UserSchema.shape.role.options.map((roleOption) => (
-                  <option key={roleOption} value={roleOption}>
-                    {roleOption.charAt(0).toUpperCase() + roleOption.slice(1)}
-                  </option>
-                ))}
+                <option value="client">Cliente</option>
+                <option value="admin">Administrador</option>
               </select>
             </div>
             {isSelfEditing && <p className="text-sm text-gray-400 mt-2">Você não pode alterar sua própria função.</p>}
@@ -154,7 +147,7 @@ export default function EditUserModal({ isOpen, onClose, user, onSave, currentAd
               id="isBanned"
               checked={isBanned}
               onChange={(e) => setIsBanned(e.target.checked)}
-              disabled={isSelfEditing}
+              disabled={isSelfEditing} // Admin não pode bloquear a si mesmo
               className={`form-checkbox h-6 w-6 text-red-600 bg-gray-600 border-gray-500 rounded focus:ring-red-500 ${isSelfEditing ? 'opacity-60 cursor-not-allowed' : ''}`}
             />
           </div>

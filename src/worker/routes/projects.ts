@@ -95,27 +95,21 @@ projects.post(
   }
 );
 
-// Get all projects (Admin only) or projects for a specific user (Admin only)
+// Get all projects (Admin only)
 projects.get('/', adminOnly, async (c) => {
   const supabaseAdmin = c.get('supabaseAdmin'); // Use admin client to bypass RLS for admin view
-  const queryUserId = c.req.query('userId'); // Get userId from query parameter
-
   try {
-    let query = supabaseAdmin.from('projects').select('*');
-
-    if (queryUserId) {
-      query = query.eq('user_id', queryUserId);
-    }
-
-    const { data, error } = await query;
+    const { data, error } = await supabaseAdmin
+      .from('projects')
+      .select('*');
 
     if (error) {
-      console.error('Supabase fetch projects error:', error);
+      console.error('Supabase fetch all projects error:', error);
       return c.json({ error: 'Failed to fetch projects' }, 500);
     }
     return c.json(data, 200);
   } catch (error) {
-    console.error('Error fetching projects:', error);
+    console.error('Error fetching all projects:', error);
     return c.json({ error: 'Internal server error' }, 500);
   }
 });
@@ -148,9 +142,8 @@ projects.get('/:id', async (c) => {
   } catch (error) {
     console.error('Error fetching project by ID:', error);
     return c.json({ error: 'Internal server error' }, 500);
-    }
   }
-);
+});
 
 // Update a project (Admin or project owner)
 projects.put(

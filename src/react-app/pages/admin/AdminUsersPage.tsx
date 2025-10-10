@@ -1,31 +1,25 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { ChevronLeft, User, Mail, Calendar, Edit, Trash2, UserPlus, Ban, CheckCircle2, Search, Filter, Eye, ToggleLeft, ToggleRight, Hourglass } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/browserClient';
+import { ChevronLeft, User, Mail, Calendar, Edit, Trash2, UserPlus, Ban, CheckCircle2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/browserClient'; // Importar o cliente Supabase
 import EditUserModal from '@/react-app/components/admin/EditUserModal';
 import CreateUserModal from '@/react-app/components/admin/CreateUserModal';
-import UserProjectsModal from '@/react-app/components/admin/UserProjectsModal';
-import { UserSchema } from '@/shared/types';
-import { z } from 'zod';
-
-type UserRole = z.infer<typeof UserSchema.shape.role>;
 
 interface UserProfile {
   id: string;
   first_name: string | null;
   last_name: string | null;
   avatar_url: string | null;
-  role: UserRole;
+  role: 'client' | 'admin';
   updated_at: string;
   asaas_customer_id: string | null;
   auth_users: {
     email: string;
     created_at: string;
-    banned_until: string | null;
-    email_confirmed_at: string | null;
+    banned_until: string | null; // Adicionado para status de bloqueio
   };
 }
 
@@ -36,12 +30,8 @@ export default function AdminUsersPage() {
   const [error, setError] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isProjectsModalOpen, setIsProjectsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
-  const [selectedUserForProjects, setSelectedUserForProjects] = useState<{ id: string; name: string } | null>(null);
   const [currentAdminId, setCurrentAdminId] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterRole, setFilterRole] = useState<UserRole | 'All'>('All');
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -62,12 +52,18 @@ export default function AdminUsersPage() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Falha ao buscar usuários.');
+        let errorDetails = 'Falha ao buscar usuários.';
+        try {
+          const errorData = await response.json();
+          errorDetails = errorData.error || JSON.stringify(errorData);
+        } catch (jsonError) {
+          errorDetails = response.statusText || 'Erro desconhecido ao buscar usuários.';
+        }
+        throw new Error(errorDetails);
       }
 
       const data: UserProfile[] = await response.json();
-      setUsers(Array.isArray(data) ? data : []); // Ensure it's always an array
+      setUsers(data);
     } catch (err: any) {
       console.error('Erro ao buscar usuários:', err);
       setError(err.message || 'Erro ao carregar usuários.');
@@ -92,7 +88,7 @@ export default function AdminUsersPage() {
 
   const handleSaveUser = async (
     userId: string,
-    data: { first_name?: string; last_name?: string; email?: string; role?: UserRole; is_banned?: boolean }
+    data: { first_name?: string; last_name?: string; email?: string; role?: 'client' | 'admin'; is_banned?: boolean }
   ) => {
     toast.loading('Salvando alterações...', { id: 'saveUser' });
     try {
@@ -113,12 +109,18 @@ export default function AdminUsersPage() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Falha ao salvar usuário.');
+        let errorDetails = 'Falha ao salvar usuário.';
+        try {
+          const errorData = await response.json();
+          errorDetails = errorData.error || JSON.stringify(errorData);
+        } catch (jsonError) {
+          errorDetails = response.statusText || 'Erro desconhecido ao salvar usuário.';
+        }
+        throw new Error(errorDetails);
       }
 
       toast.success('Usuário salvo com sucesso!', { id: 'saveUser' });
-      fetchUsers();
+      fetchUsers(); // Re-fetch users to update the list
     } catch (err: any) {
       console.error('Erro ao salvar usuário:', err);
       toast.error(err.message || 'Erro ao salvar usuário.', { id: 'saveUser' });
@@ -152,8 +154,14 @@ export default function AdminUsersPage() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Falha ao deletar usuário.');
+        let errorDetails = 'Falha ao deletar usuário.';
+        try {
+          const errorData = await response.json();
+          errorDetails = errorData.error || JSON.stringify(errorData);
+        } catch (jsonError) {
+          errorDetails = response.statusText || 'Erro desconhecido ao deletar usuário.';
+        }
+        throw new Error(errorDetails);
       }
 
       setUsers(prevUsers => prevUsers.filter(user => user.id !== userId));
@@ -165,7 +173,7 @@ export default function AdminUsersPage() {
   };
 
   const handleCreateUser = async (
-    data: { first_name: string; last_name: string; email: string; password: string; role: UserRole; send_credentials_email: boolean }
+    data: { first_name: string; last_name: string; email: string; password: string; role: 'client' | 'admin' }
   ) => {
     toast.loading('Cadastrando novo usuário...', { id: 'createUser' });
     try {
@@ -185,131 +193,29 @@ export default function AdminUsersPage() {
         body: JSON.stringify({
           email: data.email,
           password: data.password,
-          first_name: data.first_name,
-          last_name: data.last_name,
+          name: data.first_name, // Passa first_name como 'name' para o worker
           role: data.role,
         }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Falha ao cadastrar usuário.');
+        let errorDetails = 'Falha ao cadastrar usuário.';
+        try {
+          const errorData = await response.json();
+          errorDetails = errorData.error || JSON.stringify(errorData);
+        } catch (jsonError) {
+          errorDetails = response.statusText || 'Erro desconhecido ao cadastrar usuário.';
+        }
+        throw new Error(errorDetails);
       }
 
       toast.success('Usuário cadastrado com sucesso!', { id: 'createUser' });
-      
-      if (data.send_credentials_email) {
-        await handleResendAccess(data.email);
-      }
-
-      fetchUsers();
+      fetchUsers(); // Re-fetch users to update the list
     } catch (err: any) {
       console.error('Erro ao cadastrar usuário:', err);
       toast.error(err.message || 'Erro ao cadastrar usuário.', { id: 'createUser' });
     }
   };
-
-  const handleResendAccess = async (email: string) => {
-    toast.loading('Reenviando link de acesso...', { id: 'resendAccess' });
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/login`,
-      });
-
-      if (error) {
-        console.error('Erro ao reenviar acesso:', error);
-        toast.error(error.message || 'Falha ao reenviar link de acesso.', { id: 'resendAccess' });
-      } else {
-        toast.success('Link de redefinição de senha enviado para o email!', { id: 'resendAccess' });
-      }
-    } catch (err: any) {
-      console.error('Erro inesperado ao reenviar acesso:', err);
-      toast.error('Erro inesperado ao reenviar link de acesso.', { id: 'resendAccess' });
-    }
-  };
-
-  const handleToggleUserStatus = async (user: UserProfile) => {
-    if (user.id === currentAdminId) {
-      toast.error('Você não pode alterar o status da sua própria conta.');
-      return;
-    }
-
-    const newBannedStatus = !user.auth_users.banned_until;
-    const actionText = newBannedStatus ? 'inativar' : 'ativar';
-
-    if (!window.confirm(`Tem certeza que deseja ${actionText} o usuário ${user.first_name || user.auth_users.email}?`)) {
-      return;
-    }
-
-    toast.loading(`Atualizando status do usuário...`, { id: 'toggleStatus' });
-    try {
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !session || !session.access_token) {
-        toast.error('Sua sessão expirou. Por favor, faça login novamente.', { id: 'toggleStatus' });
-        navigate('/login');
-        return;
-      }
-
-      const response = await fetch(`/api/profiles/${user.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({ is_banned: newBannedStatus }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Falha ao ${actionText} usuário.`);
-      }
-
-      toast.success(`Usuário ${actionText} com sucesso!`, { id: 'toggleStatus' });
-      fetchUsers();
-    } catch (err: any) {
-      console.error(`Erro ao ${actionText} usuário:`, err);
-      toast.error(err.message || `Erro ao ${actionText} usuário.`, { id: 'toggleStatus' });
-    }
-  };
-
-  const handleViewProjects = (user: UserProfile) => {
-    setSelectedUserForProjects({ id: user.id, name: user.first_name || user.auth_users.email });
-    setIsProjectsModalOpen(true);
-  };
-
-  const getUserStatus = (user: UserProfile) => {
-    if (user.auth_users.banned_until) {
-      return { text: 'Inativo', color: 'bg-red-100 text-red-800', icon: <Ban className="w-4 h-4" /> };
-    }
-    if (!user.auth_users.email_confirmed_at) {
-      return { text: 'Pendente', color: 'bg-yellow-100 text-yellow-800', icon: <Hourglass className="w-4 h-4" /> };
-    }
-    return { text: 'Ativo', color: 'bg-green-100 text-green-800', icon: <CheckCircle2 className="w-4 h-4" /> };
-  };
-
-  const memoizedFilteredUsers = useMemo(() => {
-    // Ensure users is always an array before filtering
-    if (!Array.isArray(users)) {
-      console.error("Users state is not an array, returning empty array for memoizedFilteredUsers.");
-      return [];
-    }
-
-    return users.filter(user => {
-      const fullName = `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase();
-      const email = user.auth_users.email.toLowerCase();
-      const role = user.role.toLowerCase();
-      const status = getUserStatus(user).text.toLowerCase();
-
-      const matchesSearch = searchTerm === '' ||
-                            fullName.includes(searchTerm.toLowerCase()) ||
-                            email.includes(searchTerm.toLowerCase()) ||
-                            role.includes(searchTerm.toLowerCase()) ||
-                            status.includes(searchTerm.toLowerCase());
-                            
-      const matchesRole = filterRole === 'All' || user.role === filterRole;
-      return matchesSearch && matchesRole;
-    });
-  }, [users, searchTerm, filterRole, currentAdminId]);
 
   if (loading) {
     return (
@@ -332,9 +238,6 @@ export default function AdminUsersPage() {
       </div>
     );
   }
-
-  // Log para depuração antes da renderização da tabela
-  console.log("Rendering AdminUsersPage. memoizedFilteredUsers:", memoizedFilteredUsers);
 
   return (
     <div className="min-h-screen bg-gray-950 text-white font-sans p-8">
@@ -359,41 +262,12 @@ export default function AdminUsersPage() {
           </button>
         </div>
 
-        {/* Filtros e Busca */}
-        <div className="bg-gray-900 p-6 rounded-xl shadow-lg border border-gray-700 mb-8 flex flex-col md:flex-row gap-4">
-          <div className="relative flex-grow">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Buscar por nome, email, função ou status..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <div className="relative">
-            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <select
-              value={filterRole}
-              onChange={(e) => setFilterRole(e.target.value as UserRole | 'All')}
-              className="w-full md:w-auto pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="All">Todas as Funções</option>
-              {UserSchema.shape.role.options.map((roleOption) => (
-                <option key={roleOption} value={roleOption}>
-                  {roleOption.charAt(0).toUpperCase() + roleOption.slice(1)}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
         <div className="bg-gray-900 p-6 rounded-xl shadow-lg border border-gray-700">
-          {memoizedFilteredUsers.length === 0 ? (
+          {users.length === 0 ? (
             <p className="text-center text-gray-400 text-lg">Nenhum usuário encontrado.</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-700 rounded-lg overflow-hidden">
+              <table className="min-w-full divide-y divide-gray-700">
                 <thead className="bg-gray-800">
                   <tr>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
@@ -417,93 +291,65 @@ export default function AdminUsersPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-800">
-                  {memoizedFilteredUsers.map((user) => {
-                    const userStatus = getUserStatus(user);
-                    const isSelf = user.id === currentAdminId;
-                    return (
-                      <tr key={user.id} className="hover:bg-gray-800 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            {user.avatar_url ? (
-                              <img className="h-8 w-8 rounded-full mr-3" src={user.avatar_url} alt="" />
-                            ) : (
-                              <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm mr-3">
-                                {user.first_name && user.first_name.length > 0 ? user.first_name.charAt(0).toUpperCase() : <User className="w-4 h-4" />}
-                              </div>
-                            )}
-                            <div className="text-sm font-medium text-white">
-                              {user.first_name} {user.last_name}
+                  {users.map((user) => (
+                    <tr key={user.id} className="hover:bg-gray-800 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          {user.avatar_url ? (
+                            <img className="h-8 w-8 rounded-full mr-3" src={user.avatar_url} alt="" />
+                          ) : (
+                            <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm mr-3">
+                              {user.first_name ? user.first_name[0] : <User className="w-4 h-4" />}
                             </div>
+                          )}
+                          <div className="text-sm font-medium text-white">
+                            {user.first_name} {user.last_name}
                           </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-300 flex items-center gap-2">
-                            <Mail className="w-4 h-4 text-gray-500" /> {user.auth_users.email}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
-                            user.role === 'client' ? 'bg-blue-100 text-blue-800' :
-                            user.role === 'dev' ? 'bg-green-100 text-green-800' :
-                            user.role === 'copywriter' ? 'bg-orange-100 text-orange-800' :
-                            'bg-yellow-100 text-yellow-800' // manager
-                          }`}>
-                            {user.role}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex items-center gap-1 text-xs leading-5 font-semibold rounded-full ${userStatus.color}`}>
-                            {userStatus.icon} {userStatus.text}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4 text-gray-500" /> {new Date(user.auth_users.created_at).toLocaleDateString('pt-BR')}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <button
-                            onClick={() => handleViewProjects(user)}
-                            className="text-cyan-400 hover:text-cyan-300 mr-4"
-                            title="Ver projetos deste usuário"
-                          >
-                            <Eye className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={() => handleResendAccess(user.auth_users.email)}
-                            className="text-yellow-400 hover:text-yellow-300 mr-4"
-                            title="Reenviar acesso"
-                          >
-                            <Mail className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={() => handleToggleUserStatus(user)}
-                            className={`mr-4 ${isSelf ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            title={isSelf ? 'Você não pode alterar seu próprio status' : (userStatus.text === 'Inativo' ? 'Ativar Usuário' : 'Inativar Usuário')}
-                            disabled={isSelf}
-                          >
-                            {userStatus.text === 'Inativo' ? <ToggleRight className="w-5 h-5 text-green-400 hover:text-green-300" /> : <ToggleLeft className="w-5 h-5 text-red-400 hover:text-red-300" />}
-                          </button>
-                          <button
-                            onClick={() => handleEditUser(user)}
-                            className="text-blue-400 hover:text-blue-300 mr-4"
-                            title="Editar Usuário"
-                          >
-                            <Edit className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteUser(user.id)}
-                            className={`text-red-400 hover:text-red-300 ${isSelf ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            title={isSelf ? 'Você não pode deletar sua própria conta' : 'Deletar Usuário'}
-                            disabled={isSelf}
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-300 flex items-center gap-2">
+                          <Mail className="w-4 h-4 text-gray-500" /> {user.auth_users.email}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          {user.role}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          user.auth_users.banned_until ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                        }`}>
+                          {user.auth_users.banned_until ? 'Bloqueado' : 'Ativo'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-gray-500" /> {new Date(user.auth_users.created_at).toLocaleDateString('pt-BR')}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button
+                          onClick={() => handleEditUser(user)}
+                          className="text-blue-400 hover:text-blue-300 mr-4"
+                          title="Editar Usuário"
+                        >
+                          <Edit className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteUser(user.id)}
+                          className={`text-red-400 hover:text-red-300 ${user.id === currentAdminId ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          title={user.id === currentAdminId ? 'Você não pode deletar sua própria conta' : 'Deletar Usuário'}
+                          disabled={user.id === currentAdminId}
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -515,7 +361,7 @@ export default function AdminUsersPage() {
         <EditUserModal
           isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
-          user={{ ...editingUser, is_banned: !!editingUser.auth_users.banned_until }}
+          user={editingUser}
           onSave={handleSaveUser}
           currentAdminId={currentAdminId!}
         />
@@ -526,15 +372,6 @@ export default function AdminUsersPage() {
         onClose={() => setIsCreateModalOpen(false)}
         onCreate={handleCreateUser}
       />
-
-      {selectedUserForProjects && (
-        <UserProjectsModal
-          isOpen={isProjectsModalOpen}
-          onClose={() => setIsProjectsModalOpen(false)}
-          userId={selectedUserForProjects.id}
-          userName={selectedUserForProjects.name}
-        />
-      )}
     </div>
   );
 }

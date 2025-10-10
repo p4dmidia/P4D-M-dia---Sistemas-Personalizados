@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { supabase } from '@/integrations/supabase/browserClient';
-import { LogOut, Users, Settings, BarChart2, FileText, ChevronLeft, FolderOpen } from 'lucide-react'; // Importando FolderOpen
+import { LogOut, Users, Settings, BarChart2, FileText, ChevronLeft } from 'lucide-react';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -95,12 +95,12 @@ export default function AdminDashboard() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {/* Card: Gerenciar Usuários */}
-          <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-8 shadow-xl hover:border-blue-500/50 transition-all duration-300 transform hover:scale-105 hover:shadow-blue-500/25">
+          <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-8 shadow-xl hover:border-blue-500/50 transition-all duration-300 transform hover:scale-105">
             <Users className="w-12 h-12 text-blue-400 mb-4" />
             <h3 className="text-2xl font-bold text-white mb-3">Gerenciar Usuários</h3>
-            <p className="text-gray-300 mb-6">Visualize, edite e conecte perfis de clientes e administradores aos seus projetos.</p>
+            <p className="text-gray-300 mb-6">Visualize e edite perfis de clientes e administradores.</p>
             <button
-              onClick={() => navigate('/admin/usuarios')}
+              onClick={() => navigate('/admin/users')}
               className="flex items-center gap-2 px-6 py-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-all duration-200"
             >
               Acessar <ChevronLeft className="w-5 h-5 rotate-180" />
@@ -108,38 +108,25 @@ export default function AdminDashboard() {
           </div>
 
           {/* Card: Projetos e Assinaturas */}
-          <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-8 shadow-xl hover:border-purple-500/50 transition-all duration-300 transform hover:scale-105 hover:shadow-purple-500/25">
+          <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-8 shadow-xl hover:border-purple-500/50 transition-all duration-300 transform hover:scale-105">
             <FileText className="w-12 h-12 text-purple-400 mb-4" />
             <h3 className="text-2xl font-bold text-white mb-3">Projetos e Assinaturas</h3>
-            <p className="text-gray-300 mb-6">Acompanhe o status dos projetos, assinaturas e pagamentos.</p>
+            <p className="text-gray-300 mb-6">Acompanhe o status dos projetos e gerencie assinaturas.</p>
             <button
-              onClick={() => navigate('/admin/projetos')}
+              onClick={() => navigate('/admin/projects-subscriptions')}
               className="flex items-center gap-2 px-6 py-3 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-semibold transition-all duration-200"
             >
               Acessar <ChevronLeft className="w-5 h-5 rotate-180" />
             </button>
           </div>
 
-          {/* Card: Documentos do Projeto (PRD, Copy, IA Prompts) */}
-          <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-8 shadow-xl hover:border-orange-500/50 transition-all duration-300 transform hover:scale-105 hover:shadow-orange-500/25">
-            <FolderOpen className="w-12 h-12 text-orange-400 mb-4" />
-            <h3 className="text-2xl font-bold text-white mb-3">Documentos do Projeto</h3>
-            <p className="text-gray-300 mb-6">Gere PRDs, cópias e prompts com IA de forma automatizada.</p>
-            <button
-              onClick={() => navigate('/admin/documentos')}
-              className="flex items-center gap-2 px-6 py-3 rounded-full bg-orange-600 hover:bg-orange-700 text-white font-semibold transition-all duration-200"
-            >
-              Acessar <ChevronLeft className="w-5 h-5 rotate-180" />
-            </button>
-          </div>
-
           {/* Card: Relatórios e Análises */}
-          <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-8 shadow-xl hover:border-green-500/50 transition-all duration-300 transform hover:scale-105 hover:shadow-green-500/25">
+          <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-8 shadow-xl hover:border-green-500/50 transition-all duration-300 transform hover:scale-105">
             <BarChart2 className="w-12 h-12 text-green-400 mb-4" />
             <h3 className="text-2xl font-bold text-white mb-3">Relatórios e Análises</h3>
-            <p className="text-gray-300 mb-6">Visualize métricas, relatórios de desempenho e evolução dos projetos.</p>
+            <p className="text-gray-300 mb-6">Visualize métricas e relatórios de desempenho.</p>
             <button
-              onClick={() => navigate('/admin/relatorios')}
+              onClick={() => navigate('/admin/reports-analytics')}
               className="flex items-center gap-2 px-6 py-3 rounded-full bg-green-600 hover:bg-green-700 text-white font-semibold transition-all duration-200"
             >
               Acessar <ChevronLeft className="w-5 h-5 rotate-180" />
@@ -147,12 +134,12 @@ export default function AdminDashboard() {
           </div>
 
           {/* Card: Configurações do Sistema */}
-          <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-8 shadow-xl hover:border-yellow-500/50 transition-all duration-300 transform hover:scale-105 hover:shadow-yellow-500/25">
+          <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-8 shadow-xl hover:border-yellow-500/50 transition-all duration-300 transform hover:scale-105">
             <Settings className="w-12 h-12 text-yellow-400 mb-4" />
             <h3 className="text-2xl font-bold text-white mb-3">Configurações do Sistema</h3>
-            <p className="text-gray-300 mb-6">Gerencie integrações, papéis da equipe e automações.</p>
+            <p className="text-gray-300 mb-6">Ajuste configurações globais do P4D Studio.</p>
             <button
-              onClick={() => navigate('/admin/configuracoes')}
+              onClick={() => navigate('/admin/settings')}
               className="flex items-center gap-2 px-6 py-3 rounded-full bg-yellow-600 hover:bg-yellow-700 text-white font-semibold transition-all duration-200"
             >
               Acessar <ChevronLeft className="w-5 h-5 rotate-180" />

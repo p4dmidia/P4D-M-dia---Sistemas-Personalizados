@@ -6,11 +6,10 @@ import Funnel from "@/react-app/pages/Funnel";
 import FunnelSummary from "@/react-app/pages/FunnelSummary";
 import Dashboard from "@/react-app/pages/Dashboard";
 import AdminDashboard from "@/react-app/pages/admin/AdminDashboard";
-import AdminUsersPage from "@/react-app/pages/admin/AdminUsersPage";
+import AdminUsersPage from "@/react-app/pages/admin/AdminUsersPage"; // Importando as novas páginas
 import AdminProjectsSubscriptionsPage from "@/react-app/pages/admin/AdminProjectsSubscriptionsPage";
 import AdminReportsAnalyticsPage from "@/react-app/pages/admin/AdminReportsAnalyticsPage";
 import AdminSettingsPage from "@/react-app/pages/admin/AdminSettingsPage";
-import AdminProjectDocumentsPage from "@/react-app/pages/admin/AdminProjectDocumentsPage"; // Importando a nova página
 import ProtectedRoute from "@/react-app/components/ProtectedRoute";
 
 export default function App() {
@@ -43,7 +42,7 @@ export default function App() {
           } 
         />
         <Route 
-          path="/admin/usuarios" 
+          path="/admin/users" 
           element={
             <ProtectedRoute allowedRoles={['admin']} redirectPath="/login">
               <AdminUsersPage />
@@ -51,7 +50,7 @@ export default function App() {
           } 
         />
         <Route 
-          path="/admin/projetos" 
+          path="/admin/projects-subscriptions" 
           element={
             <ProtectedRoute allowedRoles={['admin']} redirectPath="/login">
               <AdminProjectsSubscriptionsPage />
@@ -59,7 +58,7 @@ export default function App() {
           } 
         />
         <Route 
-          path="/admin/relatorios" 
+          path="/admin/reports-analytics" 
           element={
             <ProtectedRoute allowedRoles={['admin']} redirectPath="/login">
               <AdminReportsAnalyticsPage />
@@ -67,18 +66,10 @@ export default function App() {
           } 
         />
         <Route 
-          path="/admin/configuracoes" 
+          path="/admin/settings" 
           element={
             <ProtectedRoute allowedRoles={['admin']} redirectPath="/login">
               <AdminSettingsPage />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/admin/documentos" 
-          element={
-            <ProtectedRoute allowedRoles={['admin']} redirectPath="/login">
-              <AdminProjectDocumentsPage />
             </ProtectedRoute>
           } 
         />
