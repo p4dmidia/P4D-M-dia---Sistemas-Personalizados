@@ -92,12 +92,10 @@ analytics.get('/summary', adminOnly, async (c) => {
     if (subscriptionsError) throw subscriptionsError;
     console.log('Analytics Summary: Active subscriptions fetched:', activeSubscriptions);
 
-    console.log('Analytics Summary: Fetching projects by status...');
-    // Projetos por Status
+    console.log('Analytics Summary: Fetching projects by status using RPC...');
+    // Projetos por Status usando RPC
     const { data: projectsByStatus, error: statusError } = await supabaseAdmin
-      .from('projects')
-      .select('status, count') // 'count' aqui é uma função agregada reconhecida pelo Supabase ao usar .group()
-      .group('status');
+      .rpc('get_projects_by_status'); // Chamando a função SQL
     if (statusError) throw statusError;
     console.log('Analytics Summary: Projects by status fetched:', projectsByStatus);
 
