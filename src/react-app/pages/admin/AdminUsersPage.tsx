@@ -32,7 +32,7 @@ interface UserProfile {
 export default function AdminUsersPage() {
   console.log('AdminUsersPage rendering...'); // Log para depuração
   const navigate = useNavigate();
-  const [users, setUsers] = useState<UserProfile[]>([]);
+  const [users, setUsers] = useState<UserProfile[]>([]); // Sempre inicializado como array
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -316,8 +316,8 @@ export default function AdminUsersPage() {
     return { text: 'Ativo', color: 'bg-green-100 text-green-800', icon: <CheckCircle2 className="w-4 h-4" /> };
   };
 
-  // Calcular filteredUsers diretamente na renderização
-  const filteredUsers = users.filter(user => {
+  // Calcular filteredUsers diretamente na renderização, garantindo que seja sempre um array
+  const currentFilteredUsers = Array.isArray(users) ? users.filter(user => {
     const fullName = `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase();
     const email = user.auth_users.email.toLowerCase();
     const role = user.role.toLowerCase();
@@ -331,10 +331,10 @@ export default function AdminUsersPage() {
                           
     const matchesRole = filterRole === 'All' || user.role === filterRole;
     return matchesSearch && matchesRole;
-  });
+  }) : []; // Se 'users' não for um array, retorna um array vazio
 
-  console.log('AdminUsersPage: users state (before render):', users);
-  console.log('AdminUsersPage: filteredUsers value (before render):', filteredUsers);
+  console.log('AdminUsersPage: users state (at render):', users);
+  console.log('AdminUsersPage: currentFilteredUsers value (at render):', currentFilteredUsers);
 
   if (loading) {
     return (
@@ -411,7 +411,7 @@ export default function AdminUsersPage() {
         </div>
 
         <div className="bg-gray-900 p-6 rounded-xl shadow-lg border border-gray-700">
-          {filteredUsers.length === 0 ? (
+          {currentFilteredUsers.length === 0 ? (
             <p className="text-center text-gray-400 text-lg">Nenhum usuário encontrado.</p>
           ) : (
             <div className="overflow-x-auto">
@@ -438,9 +438,9 @@ export default function AdminUsersPage() {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-800">
-                  {console.log('AdminUsersPage: filteredUsers right before map in JSX:', filteredUsers, typeof filteredUsers, Array.isArray(filteredUsers))}
-                  {Array.isArray(filteredUsers) && filteredUsers.map((user) => { // Adicionado a verificação Array.isArray aqui
+                <tbody className="divide-y divide-gray-800" key="user-table-body">
+                  {console.log('AdminUsersPage: currentFilteredUsers IMMEDIATELY BEFORE MAP IN JSX:', currentFilteredUsers, typeof currentFilteredUsers, Array.isArray(currentFilteredUsers))}
+                  {currentFilteredUsers.map((user) => {
                     const userStatus = getUserStatus(user);
                     const isSelf = user.id === currentAdminId;
                     return (
