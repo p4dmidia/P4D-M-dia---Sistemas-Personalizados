@@ -10,7 +10,7 @@ type UserRole = z.infer<typeof UserSchema.shape.role>; // Definir UserRole a par
 interface CreateUserModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (data: { first_name: string; last_name: string; email: string; password: string; role: UserRole }) => Promise<void>;
+  onCreate: (data: { first_name: string; last_name: string; email: string; password: string; role: UserRole; send_credentials_email: boolean }) => Promise<void>;
 }
 
 export default function CreateUserModal({ isOpen, onClose, onCreate }: CreateUserModalProps) {
@@ -19,6 +19,7 @@ export default function CreateUserModal({ isOpen, onClose, onCreate }: CreateUse
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<UserRole>('client'); // Usar o tipo UserRole
+  const [sendCredentialsEmail, setSendCredentialsEmail] = useState(false); // Novo estado
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -31,6 +32,7 @@ export default function CreateUserModal({ isOpen, onClose, onCreate }: CreateUse
         email,
         password,
         role,
+        send_credentials_email: sendCredentialsEmail, // Passar o novo campo
       });
       // Reset form
       setFirstName('');
@@ -38,6 +40,7 @@ export default function CreateUserModal({ isOpen, onClose, onCreate }: CreateUse
       setEmail('');
       setPassword('');
       setRole('client');
+      setSendCredentialsEmail(false); // Resetar também
       onClose();
     } finally {
       setLoading(false);
@@ -146,6 +149,20 @@ export default function CreateUserModal({ isOpen, onClose, onCreate }: CreateUse
                 ))}
               </select>
             </div>
+          </div>
+
+          <div className="flex items-center justify-between bg-gray-700 border border-gray-600 rounded-lg p-4">
+            <label htmlFor="sendCredentialsEmail" className="flex items-center text-lg font-medium text-gray-300 cursor-pointer">
+              <Mail className="w-6 h-6 mr-3 text-blue-400" />
+              Enviar credenciais por e-mail
+            </label>
+            <input
+              type="checkbox"
+              id="sendCredentialsEmail"
+              checked={sendCredentialsEmail}
+              onChange={(e) => setSendCredentialsEmail(e.target.checked)}
+              className="form-checkbox h-6 w-6 text-blue-600 bg-gray-600 border-gray-500 rounded focus:ring-blue-500"
+            />
           </div>
 
           <div className="flex justify-end gap-4 mt-6">

@@ -3,11 +3,12 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { ChevronLeft, User, Mail, Calendar, Edit, Trash2, UserPlus, Ban, CheckCircle2, Search, Filter } from 'lucide-react';
+import { ChevronLeft, User, Mail, Calendar, Edit, Trash2, UserPlus, Ban, CheckCircle2, Search, Filter, Eye, ToggleLeft, ToggleRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/browserClient'; // Importar o cliente Supabase
 import EditUserModal from '@/react-app/components/admin/EditUserModal';
 import CreateUserModal from '@/react-app/components/admin/CreateUserModal';
-import { UserSchema } from '@/shared/types'; // Importar UserSchema para os tipos de role
+import UserProjectsModal from '@/react-app/components/admin/UserProjectsModal'; // Importar o novo modal
+import { UserSchema, Project } from '@/shared/types'; // Importar UserSchema para os tipos de role e Project
 
 type UserRole = z.infer<typeof UserSchema.shape.role>; // Definir UserRole a partir do schema
 
@@ -23,6 +24,7 @@ interface UserProfile {
     email: string;
     created_at: string;
     banned_until: string | null;
+    email_confirmed_at: string | null; // Adicionado
   };
 }
 
@@ -33,7 +35,9 @@ export default function AdminUsersPage() {
   const [error, setError] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isProjectsModalOpen, setIsProjectsModalOpen] = useState(false); // Novo estado para o modal de projetos
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
+  const [selectedUserForProjects, setSelectedUserForProjects] = useState<{ id: string; name: string } | null>(null); // Novo estado para o usuário selecionado para projetos
   const [currentAdminId, setCurrentAdminId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState<UserRole | 'All'>('All');
@@ -178,7 +182,7 @@ export default function AdminUsersPage() {
   };
 
   const handleCreateUser = async (
-    data: { first_name: string; last_name: string; email: string; password: string; role: UserRole }
+    data: { first_name: string; last_name: string; email: string; password: string; role: UserRole; send_credentials_email: boolean }
   ) => {
     toast.loading('Cadastrando novo usuário...', { id: 'createUser' });
     try {
@@ -216,6 +220,11 @@ export default function AdminUsersPage() {
       }
 
       toast.success('Usuário cadastrado com sucesso!', { id: 'createUser' });
+      
+      if (data.send_credentials_email) {
+        await handleResendAccess(data.email); // Reutiliza a função para enviar link de redefinição
+      }
+
       fetchUsers(); // Re-fetch users to update the list
     } catch (err: any) {
       console.error('Erro ao cadastrar usuário:', err);
@@ -242,11 +251,77 @@ export default function AdminUsersPage() {
     }
   };
 
+  const handleToggleUserStatus = async (user: UserProfile) => {
+    if (user.id === currentAdminId) {
+      toast.error('Você não pode alterar o status da sua própria conta.');
+      return;
+    }
+
+    const newBannedStatus = !user.auth_users.banned_until; // Toggle ban status
+    const actionText = newBannedStatus ? 'inativar' : 'ativar';
+
+    if (!window.confirm(`Tem certeza que deseja ${actionText} o usuário ${user.first_name || user.auth_users.email}?`)) {
+      return;
+    }
+
+    toast.loading(`Atualizando status do usuário...`, { id: 'toggleStatus' });
+    try {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session || !session.access_token) {
+        toast.error('Sua sessão expirou. Por favor, faça login novamente.', { id: 'toggleStatus' });
+        navigate('/login');
+        return;
+      }
+
+      const response = await fetch(`/api/profiles/${user.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ is_banned: newBannedStatus }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Falha ao ${actionText} usuário.`);
+      }
+
+      toast.success(`Usuário ${actionText} com sucesso!`, { id: 'toggleStatus' });
+      fetchUsers(); // Re-fetch users to update the list
+    } catch (err: any) {
+      console.error(`Erro ao ${actionText} usuário:`, err);
+      toast.error(err.message || `Erro ao ${actionText} usuário.`, { id: 'toggleStatus' });
+    }
+  };
+
+  const handleViewProjects = (user: UserProfile) => {
+    setSelectedUserForProjects({ id: user.id, name: user.first_name || user.auth_users.email });
+    setIsProjectsModalOpen(true);
+  };
+
+  const getUserStatus = (user: UserProfile) => {
+    if (user.auth_users.banned_until) {
+      return { text: 'Inativo', color: 'bg-red-100 text-red-800', icon: <Ban className="w-4 h-4" /> };
+    }
+    if (!user.auth_users.email_confirmed_at) {
+      return { text: 'Pendente', color: 'bg-yellow-100 text-yellow-800', icon: <Hourglass className="w-4 h-4" /> };
+    }
+    return { text: 'Ativo', color: 'bg-green-100 text-green-800', icon: <CheckCircle2 className="w-4 h-4" /> };
+  };
+
   const filteredUsers = users.filter(user => {
+    const fullName = `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase();
+    const email = user.auth_users.email.toLowerCase();
+    const role = user.role.toLowerCase();
+    const status = getUserStatus(user).text.toLowerCase();
+
     const matchesSearch = searchTerm === '' ||
-                          user.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          user.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          user.auth_users.email.toLowerCase().includes(searchTerm.toLowerCase());
+                          fullName.includes(searchTerm.toLowerCase()) ||
+                          email.includes(searchTerm.toLowerCase()) ||
+                          role.includes(searchTerm.toLowerCase()) ||
+                          status.includes(searchTerm.toLowerCase());
+                          
     const matchesRole = filterRole === 'All' || user.role === filterRole;
     return matchesSearch && matchesRole;
   });
@@ -302,7 +377,7 @@ export default function AdminUsersPage() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
-              placeholder="Buscar por nome ou email..."
+              placeholder="Buscar por nome, email, função ou status..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -330,7 +405,7 @@ export default function AdminUsersPage() {
             <p className="text-center text-gray-400 text-lg">Nenhum usuário encontrado.</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-700">
+              <table className="min-w-full divide-y divide-gray-700 rounded-lg overflow-hidden">
                 <thead className="bg-gray-800">
                   <tr>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
@@ -354,83 +429,93 @@ export default function AdminUsersPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-800">
-                  {filteredUsers.map((user) => (
-                    <tr key={user.id} className="hover:bg-gray-800 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          {user.avatar_url ? (
-                            <img className="h-8 w-8 rounded-full mr-3" src={user.avatar_url} alt="" />
-                          ) : (
-                            <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm mr-3">
-                              {user.first_name ? user.first_name[0] : <User className="w-4 h-4" />}
+                  {filteredUsers.map((user) => {
+                    const userStatus = getUserStatus(user);
+                    const isSelf = user.id === currentAdminId;
+                    return (
+                      <tr key={user.id} className="hover:bg-gray-800 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            {user.avatar_url ? (
+                              <img className="h-8 w-8 rounded-full mr-3" src={user.avatar_url} alt="" />
+                            ) : (
+                              <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm mr-3">
+                                {user.first_name ? user.first_name[0] : <User className="w-4 h-4" />}
+                              </div>
+                            )}
+                            <div className="text-sm font-medium text-white">
+                              {user.first_name} {user.last_name}
                             </div>
-                          )}
-                          <div className="text-sm font-medium text-white">
-                            {user.first_name} {user.last_name}
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-300 flex items-center gap-2">
-                          <Mail className="w-4 h-4 text-gray-500" /> {user.auth_users.email}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
-                          user.role === 'client' ? 'bg-blue-100 text-blue-800' :
-                          user.role === 'dev' ? 'bg-green-100 text-green-800' :
-                          user.role === 'copywriter' ? 'bg-orange-100 text-orange-800' :
-                          'bg-yellow-100 text-yellow-800' // manager
-                        }`}>
-                          {user.role}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          user.auth_users.banned_until ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
-                        }`}>
-                          {user.auth_users.banned_until ? 'Bloqueado' : 'Ativo'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-gray-500" /> {new Date(user.auth_users.created_at).toLocaleDateString('pt-BR')}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button
-                          onClick={() => navigate(`/admin/projects-subscriptions?userId=${user.id}`)}
-                          className="text-cyan-400 hover:text-cyan-300 mr-4"
-                          title="Ver projetos deste usuário"
-                        >
-                          <FolderOpen className="w-5 h-5" />
-                        </button>
-                        <button
-                          onClick={() => handleResendAccess(user.auth_users.email)}
-                          className="text-yellow-400 hover:text-yellow-300 mr-4"
-                          title="Reenviar acesso"
-                        >
-                          <Mail className="w-5 h-5" />
-                        </button>
-                        <button
-                          onClick={() => handleEditUser(user)}
-                          className="text-blue-400 hover:text-blue-300 mr-4"
-                          title="Editar Usuário"
-                        >
-                          <Edit className="w-5 h-5" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteUser(user.id)}
-                          className={`text-red-400 hover:text-red-300 ${user.id === currentAdminId ? 'opacity-50 cursor-not-allowed' : ''}`}
-                          title={user.id === currentAdminId ? 'Você não pode deletar sua própria conta' : 'Deletar Usuário'}
-                          disabled={user.id === currentAdminId}
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-300 flex items-center gap-2">
+                            <Mail className="w-4 h-4 text-gray-500" /> {user.auth_users.email}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
+                            user.role === 'client' ? 'bg-blue-100 text-blue-800' :
+                            user.role === 'dev' ? 'bg-green-100 text-green-800' :
+                            user.role === 'copywriter' ? 'bg-orange-100 text-orange-800' :
+                            'bg-yellow-100 text-yellow-800' // manager
+                          }`}>
+                            {user.role}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 inline-flex items-center gap-1 text-xs leading-5 font-semibold rounded-full ${userStatus.color}`}>
+                            {userStatus.icon} {userStatus.text}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4 text-gray-500" /> {new Date(user.auth_users.created_at).toLocaleDateString('pt-BR')}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <button
+                            onClick={() => handleViewProjects(user)}
+                            className="text-cyan-400 hover:text-cyan-300 mr-4"
+                            title="Ver projetos deste usuário"
+                          >
+                            <Eye className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => handleResendAccess(user.auth_users.email)}
+                            className="text-yellow-400 hover:text-yellow-300 mr-4"
+                            title="Reenviar acesso"
+                          >
+                            <Mail className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => handleToggleUserStatus(user)}
+                            className={`mr-4 ${isSelf ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            title={isSelf ? 'Você não pode alterar seu próprio status' : (userStatus.text === 'Inativo' ? 'Ativar Usuário' : 'Inativar Usuário')}
+                            disabled={isSelf}
+                          >
+                            {userStatus.text === 'Inativo' ? <ToggleRight className="w-5 h-5 text-green-400 hover:text-green-300" /> : <ToggleLeft className="w-5 h-5 text-red-400 hover:text-red-300" />}
+                          </button>
+                          <button
+                            onClick={() => handleEditUser(user)}
+                            className="text-blue-400 hover:text-blue-300 mr-4"
+                            title="Editar Usuário"
+                          >
+                            <Edit className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteUser(user.id)}
+                            className={`text-red-400 hover:text-red-300 ${isSelf ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            title={isSelf ? 'Você não pode deletar sua própria conta' : 'Deletar Usuário'}
+                            disabled={isSelf}
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -453,6 +538,15 @@ export default function AdminUsersPage() {
         onClose={() => setIsCreateModalOpen(false)}
         onCreate={handleCreateUser}
       />
+
+      {selectedUserForProjects && (
+        <UserProjectsModal
+          isOpen={isProjectsModalOpen}
+          onClose={() => setIsProjectsModalOpen(false)}
+          userId={selectedUserForProjects.id}
+          userName={selectedUserForProjects.name}
+        />
+      )}
     </div>
   );
 }

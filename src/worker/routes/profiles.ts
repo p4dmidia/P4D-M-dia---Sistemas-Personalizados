@@ -76,13 +76,13 @@ profiles.get('/', adminOnly, async (c) => {
       return c.json({ error: 'Failed to fetch profiles' }, 500);
     }
 
-    // Para cada perfil, busca os dados do usuário (email, created_at, banned_until) da tabela auth.users
+    // Para cada perfil, busca os dados do usuário (email, created_at, banned_until, email_confirmed_at) da tabela auth.users
     const usersWithAuthDetails = await Promise.all(profilesData.map(async (profile) => {
       const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(profile.id);
       if (userError) {
         console.error(`Error fetching auth user for profile ${profile.id}:`, userError);
         // Retorna um fallback se não conseguir buscar os dados de autenticação
-        return { ...profile, auth_users: { email: 'N/A', created_at: 'N/A', banned_until: null } };
+        return { ...profile, auth_users: { email: 'N/A', created_at: 'N/A', banned_until: null, email_confirmed_at: null } };
       }
       return {
         ...profile,
@@ -90,6 +90,7 @@ profiles.get('/', adminOnly, async (c) => {
           email: userData.user?.email || 'N/A',
           created_at: userData.user?.created_at || 'N/A',
           banned_until: userData.user?.banned_until || null,
+          email_confirmed_at: userData.user?.email_confirmed_at || null, // Adicionado
         },
       };
     }));
@@ -215,7 +216,7 @@ profiles.put(
       }
 
       // Retorna o perfil atualizado e os dados de autenticação
-      return c.json({ ...updatedProfile, auth_users: { email: updatedUserAuth.user?.email, banned_until: updatedUserAuth.user?.banned_until } }, 200);
+      return c.json({ ...updatedProfile, auth_users: { email: updatedUserAuth.user?.email, banned_until: updatedUserAuth.user?.banned_until, email_confirmed_at: updatedUserAuth.user?.email_confirmed_at } }, 200);
     } catch (error) {
       console.error('Error updating profile:', error);
       return c.json({ error: 'Internal server error' }, 500);
