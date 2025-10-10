@@ -67,7 +67,7 @@ export default function AdminUsersPage() {
       }
 
       const data: UserProfile[] = await response.json();
-      setUsers(Array.isArray(data) ? data : []);
+      setUsers(Array.isArray(data) ? data : []); // Ensure it's always an array
     } catch (err: any) {
       console.error('Erro ao buscar usuários:', err);
       setError(err.message || 'Erro ao carregar usuários.');
@@ -288,6 +288,12 @@ export default function AdminUsersPage() {
   };
 
   const filteredUsers = useMemo(() => {
+    // Ensure users is always an array before filtering
+    if (!Array.isArray(users)) {
+      console.error("Unexpected: 'users' state is not an array in useMemo. This should not happen.");
+      return [];
+    }
+
     return users.filter(user => {
       const fullName = `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase();
       const email = user.auth_users.email.toLowerCase();
@@ -326,6 +332,9 @@ export default function AdminUsersPage() {
       </div>
     );
   }
+
+  // Log para depuração antes da renderização da tabela
+  console.log("Rendering AdminUsersPage. filteredUsers:", filteredUsers);
 
   return (
     <div className="min-h-screen bg-gray-950 text-white font-sans p-8">
@@ -380,7 +389,8 @@ export default function AdminUsersPage() {
         </div>
 
         <div className="bg-gray-900 p-6 rounded-xl shadow-lg border border-gray-700">
-          {filteredUsers.length === 0 ? (
+          {/* Adicionando verificação Array.isArray aqui */}
+          {Array.isArray(filteredUsers) && filteredUsers.length === 0 ? (
             <p className="text-center text-gray-400 text-lg">Nenhum usuário encontrado.</p>
           ) : (
             <div className="overflow-x-auto">
@@ -408,7 +418,8 @@ export default function AdminUsersPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-800">
-                  {filteredUsers.map((user) => {
+                  {/* Linha 373: Adicionando verificação Array.isArray */}
+                  {Array.isArray(filteredUsers) && filteredUsers.map((user) => {
                     const userStatus = getUserStatus(user);
                     const isSelf = user.id === currentAdminId;
                     return (
