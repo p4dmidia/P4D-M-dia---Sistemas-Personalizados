@@ -43,7 +43,7 @@ export default function App() {
           } 
         />
         <Route 
-          path="/admin/users" 
+          path="/admin/usuarios" 
           element={
             <ProtectedRoute allowedRoles={['admin']} redirectPath="/login">
               <AdminUsersPage />
@@ -51,7 +51,7 @@ export default function App() {
           } 
         />
         <Route 
-          path="/admin/projects-subscriptions" 
+          path="/admin/projetos" 
           element={
             <ProtectedRoute allowedRoles={['admin']} redirectPath="/login">
               <AdminProjectsSubscriptionsPage />
@@ -59,7 +59,7 @@ export default function App() {
           } 
         />
         <Route 
-          path="/admin/reports-analytics" 
+          path="/admin/relatorios" 
           element={
             <ProtectedRoute allowedRoles={['admin']} redirectPath="/login">
               <AdminReportsAnalyticsPage />
@@ -67,7 +67,7 @@ export default function App() {
           } 
         />
         <Route 
-          path="/admin/settings" 
+          path="/admin/configuracoes" 
           element={
             <ProtectedRoute allowedRoles={['admin']} redirectPath="/login">
               <AdminSettingsPage />
@@ -75,7 +75,7 @@ export default function App() {
           } 
         />
         <Route 
-          path="/admin/project-documents" 
+          path="/admin/documentos" 
           element={
             <ProtectedRoute allowedRoles={['admin']} redirectPath="/login">
               <AdminProjectDocumentsPage />
