@@ -3,9 +3,10 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { ChevronLeft, FileText, DollarSign, Code, Search, Check, Info, Edit, Trash2 } from 'lucide-react';
+import { ChevronLeft, FileText, DollarSign, Code, Search, Check, Info, Edit, Trash2, ChevronDown } from 'lucide-react';
 import { Project, Subscription } from '@/shared/types';
-import { supabase } from '@/integrations/supabase/browserClient'; // Importar o cliente Supabase
+import { supabase } from '@/integrations/supabase/browserClient';
+import EditProjectModal from '@/react-app/components/admin/EditProjectModal'; // Importar o novo modal
 
 export default function AdminProjectsSubscriptionsPage() {
   const navigate = useNavigate();
@@ -13,55 +14,93 @@ export default function AdminProjectsSubscriptionsPage() {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isEditProjectModalOpen, setIsEditProjectModalOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session || !session.access_token) {
+        toast.error('Sua sessão expirou. Por favor, faça login novamente.');
+        navigate('/login');
+        return;
+      }
+
+      // Fetch Projects
+      const projectsResponse = await fetch('/api/projects', {
+        headers: { 'Authorization': `Bearer ${session.access_token}` },
+      });
+      if (!projectsResponse.ok) {
+        const errorData = await projectsResponse.json();
+        throw new Error(errorData.error || 'Falha ao buscar projetos.');
+      }
+      const projectsData: Project[] = await projectsResponse.json();
+      setProjects(projectsData);
+
+      // Fetch Subscriptions
+      const subscriptionsResponse = await fetch('/api/subscriptions', {
+        headers: { 'Authorization': `Bearer ${session.access_token}` },
+      });
+      if (!subscriptionsResponse.ok) {
+        const errorData = await subscriptionsResponse.json();
+        throw new Error(errorData.error || 'Falha ao buscar assinaturas.');
+      }
+      const subscriptionsData: Subscription[] = await subscriptionsResponse.json();
+      setSubscriptions(subscriptionsData);
+
+    } catch (err: any) {
+      console.error('Erro ao buscar dados:', err);
+      setError(err.message || 'Erro ao carregar projetos e assinaturas.');
+      toast.error(err.message || 'Erro ao carregar projetos e assinaturas.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError || !session || !session.access_token) {
-          toast.error('Sua sessão expirou. Por favor, faça login novamente.');
-          navigate('/login');
-          return;
-        }
-
-        // Fetch Projects
-        const projectsResponse = await fetch('/api/projects', {
-          headers: { 'Authorization': `Bearer ${session.access_token}` },
-        });
-        if (!projectsResponse.ok) {
-          const errorData = await projectsResponse.json();
-          throw new Error(errorData.error || 'Falha ao buscar projetos.');
-        }
-        const projectsData: Project[] = await projectsResponse.json();
-        setProjects(projectsData);
-
-        // Fetch Subscriptions
-        const subscriptionsResponse = await fetch('/api/subscriptions', {
-          headers: { 'Authorization': `Bearer ${session.access_token}` },
-        });
-        if (!subscriptionsResponse.ok) {
-          const errorData = await subscriptionsResponse.json();
-          throw new Error(errorData.error || 'Falha ao buscar assinaturas.');
-        }
-        const subscriptionsData: Subscription[] = await subscriptionsResponse.json();
-        setSubscriptions(subscriptionsData);
-
-      } catch (err: any) {
-        console.error('Erro ao buscar dados:', err);
-        setError(err.message || 'Erro ao carregar projetos e assinaturas.');
-        toast.error(err.message || 'Erro ao carregar projetos e assinaturas.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchData();
   }, [navigate]);
 
-  const handleEditProject = (projectId: string) => {
-    toast.info(`Editar projeto ${projectId} (funcionalidade em breve!)`);
+  const handleEditProject = (project: Project) => {
+    setEditingProject(project);
+    setIsEditProjectModalOpen(true);
+  };
+
+  const handleSaveProject = async (
+    projectId: string,
+    data: { status: string; summary?: string; estimated_delivery?: string }
+  ) => {
+    toast.loading('Salvando alterações do projeto...', { id: 'saveProject' });
+    try {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session || !session.access_token) {
+        toast.error('Sua sessão expirou. Por favor, faça login novamente.', { id: 'saveProject' });
+        navigate('/login');
+        return;
+      }
+
+      const response = await fetch(`/api/projects/${projectId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Falha ao salvar projeto.');
+      }
+
+      toast.success('Projeto salvo com sucesso!', { id: 'saveProject' });
+      fetchData(); // Re-fetch data to update the list
+    } catch (err: any) {
+      console.error('Erro ao salvar projeto:', err);
+      toast.error(err.message || 'Erro ao salvar projeto.', { id: 'saveProject' });
+    }
   };
 
   const handleDeleteProject = async (projectId: string) => {
@@ -232,7 +271,7 @@ export default function AdminProjectsSubscriptionsPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button
-                          onClick={() => handleEditProject(project.id!)}
+                          onClick={() => handleEditProject(project)}
                           className="text-blue-400 hover:text-blue-300 mr-4"
                           title="Editar Projeto"
                         >
@@ -330,6 +369,15 @@ export default function AdminProjectsSubscriptionsPage() {
           )}
         </div>
       </div>
+
+      {editingProject && (
+        <EditProjectModal
+          isOpen={isEditProjectModalOpen}
+          onClose={() => setIsEditProjectModalOpen(false)}
+          project={editingProject}
+          onSave={handleSaveProject}
+        />
+      )}
     </div>
   );
 }
