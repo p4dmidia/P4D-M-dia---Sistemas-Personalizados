@@ -9,53 +9,38 @@ import { LogOut, Users, Settings, BarChart2, FileText, ChevronLeft } from 'lucid
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [userRole, setUserRole] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>('Administrador');
 
   useEffect(() => {
-    const checkAdminStatus = async () => {
-      setLoading(true);
+    const fetchUserProfile = async () => {
       const { data: { user }, error } = await supabase.auth.getUser();
-
       if (error || !user) {
-        toast.error('Sua sessão expirou ou você não está logado. Por favor, faça login novamente.');
+        // Este caso deve ser tratado pelo ProtectedRoute, mas é bom ter um fallback
         navigate('/login');
         return;
       }
 
-      // Fetch profile to get the role
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('first_name, role')
+        .select('first_name') // A função (role) já é verificada pelo ProtectedRoute
         .eq('id', user.id)
         .single();
 
       if (profileError && profileError.code !== 'PGRST116') {
         console.error('Erro ao buscar perfil do usuário:', profileError);
         toast.error('Erro ao carregar seu perfil.');
-        navigate('/login'); // Redirect if profile fetch fails
-        return;
+        // Nenhum redirecionamento aqui, o ProtectedRoute lida com acesso não autorizado
+      } else {
+        setUserName(profileData?.first_name || user.email?.split('@')[0] || 'Administrador');
       }
-
-      const role = profileData?.role || 'client';
-      const name = profileData?.first_name || user.email?.split('@')[0] || 'Administrador';
-
-      if (role !== 'admin') {
-        toast.error('Acesso negado. Você não tem permissões de administrador.');
-        navigate('/dashboard'); // Redirect non-admins to client dashboard
-        return;
-      }
-
-      setUserRole(role);
-      setUserName(name);
       setLoading(false);
     };
 
-    checkAdminStatus();
+    fetchUserProfile();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session?.user) {
-        navigate('/login');
+        navigate('/login'); // Se o usuário sair, redirecionar
       }
     });
 
@@ -80,7 +65,7 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black text-white">
-        <p className="text-xl">Verificando permissões de administrador...</p>
+        <p className="text-xl">Carregando painel de administrador...</p>
       </div>
     );
   }

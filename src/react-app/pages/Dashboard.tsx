@@ -49,17 +49,17 @@ export default function Dashboard() {
       if (!user) {
         const { data: { user: authUser }, error: userError } = await supabase.auth.getUser();
         if (userError || !authUser) {
-          toast.error('Sua sessão expirou ou você não está logado. Por favor, faça login novamente.');
+          // Este caso deve ser tratado pelo ProtectedRoute
           navigate('/login');
           return;
         }
         user = authUser;
       }
 
-      // Fetch profile
+      // Buscar perfil
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('first_name, last_name, avatar_url, asaas_customer_id, role') // Fetch asaas_customer_id and role
+        .select('first_name, last_name, avatar_url, asaas_customer_id, role')
         .eq('id', user.id)
         .single();
 
@@ -68,16 +68,12 @@ export default function Dashboard() {
         toast.error('Erro ao carregar dados do perfil.');
       } else if (profile) {
         setUserProfile({ ...profile, email: user.email });
-        // If user is admin, redirect to admin dashboard
-        if (profile.role === 'admin') {
-          navigate('/admin/dashboard');
-          return; // Stop loading client dashboard
-        }
+        // O redirecionamento de admin foi removido, o ProtectedRoute lida com isso
       } else {
         setUserProfile({ first_name: user.user_metadata.first_name || user.email?.split('@')[0], email: user.email, role: 'client' });
       }
 
-      // Fetch projects
+      // Buscar projetos
       const { data: projectsData, error: projectsError } = await supabase
         .from('projects')
         .select('*')
@@ -90,7 +86,7 @@ export default function Dashboard() {
       } else {
         setProjects(projectsData || []);
         if (projectsData && projectsData.length > 0 && projectsData[0].funnel_response_id) {
-          // Fetch funnel response for the latest project
+          // Buscar resposta do funil para o projeto mais recente
           const { data: funnelData, error: funnelError } = await supabase
             .from('funnel_responses')
             .select('*')
@@ -105,7 +101,7 @@ export default function Dashboard() {
         }
       }
 
-      // Fetch subscriptions
+      // Buscar assinaturas
       const { data: subscriptionsData, error: subscriptionsError } = await supabase
         .from('subscriptions')
         .select('*')
@@ -116,32 +112,32 @@ export default function Dashboard() {
         console.error('Erro ao buscar assinaturas:', subscriptionsError);
         toast.error('Erro ao carregar assinaturas.');
       } else {
-        // Check if a new active plan was just set (e.g., after a successful payment)
-        // 'subscriptions' here refers to the state *before* this update
+        // Verificar se um novo plano ativo foi definido (ex: após um pagamento bem-sucedido)
+        // 'subscriptions' aqui se refere ao estado *antes* desta atualização
         const previousHasActivePlan = subscriptions.some(sub => sub.status === 'active');
         const currentHasActivePlan = (subscriptionsData || []).some(sub => sub.status === 'active');
         
-        setSubscriptions(subscriptionsData || []); // Update the state *after* comparison
+        setSubscriptions(subscriptionsData || []); // Atualizar o estado *após* a comparação
 
         if (!previousHasActivePlan && currentHasActivePlan) {
           setShowConfetti(true);
-          setTimeout(() => setShowConfetti(false), 5000); // Hide confetti after 5 seconds
+          setTimeout(() => setShowConfetti(false), 5000); // Esconder confetes após 5 segundos
         }
       }
     } catch (error) {
       console.error('Erro inesperado ao carregar dashboard:', error);
       toast.error('Ocorreu um erro inesperado ao carregar o painel.');
     } finally {
-      setLoading(false); // Ensure loading is always set to false
+      setLoading(false); // Garantir que o loading seja sempre definido como false
     }
-  }, [navigate, subscriptions]); // Added subscriptions to dependencies
+  }, [navigate, subscriptions]); // Adicionado subscriptions às dependências
 
   useEffect(() => {
     fetchDashboardData();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
-        fetchDashboardData(session.user); // Pass the user directly
+        fetchDashboardData(session.user); // Passar o usuário diretamente
       } else {
         setUserProfile(null);
         setProjects([]);
@@ -180,20 +176,20 @@ export default function Dashboard() {
   };
 
   const handleActivatePlan = () => {
-    // This should ideally navigate to a checkout page or Asaas directly
-    // For now, we'll navigate to the funnel summary where plans are listed.
+    // Isso idealmente navegaria para uma página de checkout ou diretamente para o Asaas
+    // Por enquanto, vamos navegar para o resumo do funil onde os planos são listados.
     navigate('/funnel/summary');
-    toast('Redirecionando para a seleção de planos...'); // Changed toast.info to toast()
+    toast('Redirecionando para a seleção de planos...'); // Alterado toast.info para toast()
   };
 
   const handleManagePayment = () => {
-    toast('Redirecionando para o painel de pagamentos Asaas (funcionalidade em breve)!'); // Changed toast.info to toast()
-    // In a real scenario, you'd redirect to Asaas customer portal or a specific invoice.
+    toast('Redirecionando para o painel de pagamentos Asaas (funcionalidade em breve)!'); // Alterado toast.info para toast()
+    // Em um cenário real, você redirecionaria para o portal do cliente Asaas ou uma fatura específica.
   };
 
   const handleChangePlan = () => {
-    toast('Redirecionando para a página de troca de planos (funcionalidade em breve)!'); // Changed toast.info to toast()
-    // Redirect to a plan selection page
+    toast('Redirecionando para a página de troca de planos (funcionalidade em breve)!'); // Alterado toast.info para toast()
+    // Redirecionar para uma página de seleção de planos
   };
 
   const confirmCancelSubscription = (subscriptionId: string) => {
@@ -209,11 +205,11 @@ export default function Dashboard() {
     toast.loading('Cancelando assinatura...', { id: 'cancelToast' });
 
     try {
-      // In a real scenario, you'd call your backend (Hono Edge Function)
-      // which would then interact with Asaas API to cancel the subscription.
-      // For now, we'll simulate a successful cancellation and update Supabase.
+      // Em um cenário real, você chamaria seu backend (Hono Edge Function)
+      // que então interagiria com a API Asaas para cancelar a assinatura.
+      // Por enquanto, vamos simular um cancelamento bem-sucedido e atualizar o Supabase.
 
-      // Simulate API call delay
+      // Simular atraso da chamada da API
       await new Promise(resolve => setTimeout(resolve, 2000));
 
       const { error } = await supabase
@@ -226,7 +222,7 @@ export default function Dashboard() {
         toast.error(`Erro ao cancelar assinatura: ${error.message}`, { id: 'cancelToast' });
       } else {
         toast.success('Assinatura cancelada com sucesso!', { id: 'cancelToast' });
-        fetchDashboardData(); // Re-fetch data to update UI
+        fetchDashboardData(); // Re-buscar dados para atualizar a UI
       }
     } catch (error) {
       console.error('Erro ao cancelar assinatura:', error);
@@ -239,7 +235,7 @@ export default function Dashboard() {
 
   const handleWhatsAppSupport = () => {
     const message = encodeURIComponent('Olá, preciso de suporte com meu projeto no P4D Studio!');
-    const phoneNumber = '5511999999999'; // Replace with actual WhatsApp number
+    const phoneNumber = '5511999999999'; // Substitua pelo número real do WhatsApp
     window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
   };
 
@@ -283,7 +279,7 @@ export default function Dashboard() {
               {isAvatarMenuOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-gray-100 border border-gray-200 rounded-lg shadow-lg py-1 z-10">
                   {userProfile?.role === 'admin' && (
-                    <button onClick={() => { navigate('/admin/dashboard'); setIsAvatarMenuOpen(false); }} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-200 w-full text-left">
+                    <button onClick={() => { navigate('/admin/dashboard'); setIsAvatarMenuMenuOpen(false); }} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-200 w-full text-left">
                       <LayoutDashboard className="inline-block w-4 h-4 mr-2" /> Painel Admin
                     </button>
                   )}
@@ -553,10 +549,10 @@ export default function Dashboard() {
                         </h4>
                         <time className="block mb-2 text-sm font-normal leading-none text-gray-500">
                           {currentProject?.created_at && index === 0 ? `Iniciado em ${new Date(currentProject.created_at).toLocaleDateString('pt-BR')}` : ''}
-                          {/* Add dynamic dates for other steps if available in project data */}
+                          {/* Adicionar datas dinâmicas para outras etapas se disponíveis nos dados do projeto */}
                         </time>
                         <p className="text-base font-normal text-gray-600">
-                          {/* Dynamic description based on step */}
+                          {/* Descrição dinâmica baseada na etapa */}
                           {step.id === 'briefing_received' && 'Seu briefing foi recebido e está em análise inicial.'}
                           {step.id === 'development_started' && 'Nossa equipe iniciou o desenvolvimento do seu sistema.'}
                           {step.id === 'internal_review' && 'O sistema está em fase de testes e revisão interna.'}
@@ -579,7 +575,7 @@ export default function Dashboard() {
                   <Calendar className="w-6 h-6 text-orange-600" /> Atualizações do Projeto
                 </h3>
                 <div className="space-y-6">
-                  {/* Mock Data for Updates */}
+                  {/* Dados Mock para Atualizações */}
                   <div className="flex items-start gap-4">
                     <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white">
                       P4D
@@ -613,11 +609,11 @@ export default function Dashboard() {
                       <span className="text-sm text-gray-500">05/10/2024 14:15</span>
                     </div>
                   </div>
-                  {/* End Mock Data */}
+                  {/* Fim dos Dados Mock */}
                 </div>
               </div>
 
-              {/* Quick Support Card */}
+              {/* Cartão de Suporte Rápido */}
               <div className="bg-white/50 backdrop-blur-sm border border-gray-200/50 rounded-2xl p-8 shadow-xl text-center">
                 <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center justify-center gap-3">
                   <MessageCircle className="w-6 h-6 text-green-600" /> Suporte Rápido
@@ -639,7 +635,7 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* Settings Tab */}
+          {/* Aba de Configurações */}
           {activeTab === 'settings' && (
             <div className="bg-white/50 backdrop-blur-sm border border-gray-200/50 rounded-2xl p-8 shadow-xl">
               <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
@@ -670,7 +666,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Cancellation Confirmation Modal */}
+      {/* Modal de Confirmação de Cancelamento */}
       {showCancelConfirmation && (
         <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
           <div className="bg-white p-8 rounded-xl shadow-2xl border border-gray-200 max-w-md w-full text-center">

@@ -6,6 +6,7 @@ import Funnel from "@/react-app/pages/Funnel";
 import FunnelSummary from "@/react-app/pages/FunnelSummary";
 import Dashboard from "@/react-app/pages/Dashboard";
 import AdminDashboard from "@/react-app/pages/admin/AdminDashboard"; // Import the new AdminDashboard component
+import ProtectedRoute from "@/react-app/components/ProtectedRoute"; // Import ProtectedRoute
 
 export default function App() {
   return (
@@ -16,8 +17,26 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/funnel" element={<Funnel />} />
         <Route path="/funnel/summary" element={<FunnelSummary />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/admin/dashboard" element={<AdminDashboard />} /> {/* New Admin Dashboard Route */}
+        
+        {/* Rota Protegida para o Dashboard do Cliente */}
+        <Route 
+          path="/dashboard" 
+          element={
+            <ProtectedRoute allowedRoles={['client', 'admin']} redirectPath="/login">
+              <Dashboard />
+            </ProtectedRoute>
+          } 
+        />
+        
+        {/* Rota Protegida para o Dashboard do Administrador */}
+        <Route 
+          path="/admin/dashboard" 
+          element={
+            <ProtectedRoute allowedRoles={['admin']} redirectPath="/login">
+              <AdminDashboard />
+            </ProtectedRoute>
+          } 
+        />
       </Routes>
     </Router>
   );
