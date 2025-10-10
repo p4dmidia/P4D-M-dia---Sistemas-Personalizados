@@ -42,7 +42,8 @@ export default function UserProjectsModal({ isOpen, onClose, userId, userName }:
           return;
         }
 
-        const response = await fetch(`/api/projects?userId=${userId}`, { // Assuming API can filter by userId
+        // Chamar a API com o parâmetro userId
+        const response = await fetch(`/api/projects?userId=${userId}`, {
           headers: { 'Authorization': `Bearer ${session.access_token}` },
         });
 

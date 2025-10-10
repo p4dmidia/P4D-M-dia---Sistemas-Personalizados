@@ -2,10 +2,10 @@
 
 import React, { useState } from 'react';
 import { X, UserPlus, User, Mail, Lock, Briefcase } from 'lucide-react';
-import { UserSchema } from '@/shared/types'; // Importar UserSchema para os tipos de role
-import { z } from 'zod'; // Adicionado: Importar z do zod
+import { UserSchema } from '@/shared/types';
+import { z } from 'zod';
 
-type UserRole = z.infer<typeof UserSchema.shape.role>; // Definir UserRole a partir do schema
+type UserRole = z.infer<typeof UserSchema.shape.role>;
 
 interface CreateUserModalProps {
   isOpen: boolean;
@@ -18,8 +18,8 @@ export default function CreateUserModal({ isOpen, onClose, onCreate }: CreateUse
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<UserRole>('client'); // Usar o tipo UserRole
-  const [sendCredentialsEmail, setSendCredentialsEmail] = useState(false); // Novo estado
+  const [role, setRole] = useState<UserRole>('client');
+  const [sendCredentialsEmail, setSendCredentialsEmail] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,7 +32,7 @@ export default function CreateUserModal({ isOpen, onClose, onCreate }: CreateUse
         email,
         password,
         role,
-        send_credentials_email: sendCredentialsEmail, // Passar o novo campo
+        send_credentials_email: sendCredentialsEmail,
       });
       // Reset form
       setFirstName('');
@@ -40,7 +40,7 @@ export default function CreateUserModal({ isOpen, onClose, onCreate }: CreateUse
       setEmail('');
       setPassword('');
       setRole('client');
-      setSendCredentialsEmail(false); // Resetar também
+      setSendCredentialsEmail(false);
       onClose();
     } finally {
       setLoading(false);

@@ -1,45 +1,44 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { ChevronLeft, User, Mail, Calendar, Edit, Trash2, UserPlus, Ban, CheckCircle2, Search, Filter, Eye, ToggleLeft, ToggleRight, Hourglass } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/browserClient'; // Importar o cliente Supabase
+import { supabase } from '@/integrations/supabase/browserClient';
 import EditUserModal from '@/react-app/components/admin/EditUserModal';
 import CreateUserModal from '@/react-app/components/admin/CreateUserModal';
-import UserProjectsModal from '@/react-app/components/admin/UserProjectsModal'; // Importar o novo modal
-import { UserSchema, Project } from '@/shared/types'; // Importar UserSchema para os tipos de role e Project
-import { z } from 'zod'; // Importar z do zod
+import UserProjectsModal from '@/react-app/components/admin/UserProjectsModal';
+import { UserSchema } from '@/shared/types';
+import { z } from 'zod';
 
-type UserRole = z.infer<typeof UserSchema.shape.role>; // Definir UserRole a partir do schema
+type UserRole = z.infer<typeof UserSchema.shape.role>;
 
 interface UserProfile {
   id: string;
   first_name: string | null;
   last_name: string | null;
   avatar_url: string | null;
-  role: UserRole; // Usar o tipo UserRole
+  role: UserRole;
   updated_at: string;
   asaas_customer_id: string | null;
   auth_users: {
     email: string;
     created_at: string;
     banned_until: string | null;
-    email_confirmed_at: string | null; // Adicionado
+    email_confirmed_at: string | null;
   };
 }
 
 export default function AdminUsersPage() {
-  console.log('AdminUsersPage rendering...'); // Log para depuração
   const navigate = useNavigate();
-  const [users, setUsers] = useState<UserProfile[]>([]); // Sempre inicializado como array
+  const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isProjectsModalOpen, setIsProjectsModalOpen] = useState(false); // Novo estado para o modal de projetos
+  const [isProjectsModalOpen, setIsProjectsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
-  const [selectedUserForProjects, setSelectedUserForProjects] = useState<{ id: string; name: string } | null>(null); // Novo estado para o usuário selecionado para projetos
+  const [selectedUserForProjects, setSelectedUserForProjects] = useState<{ id: string; name: string } | null>(null);
   const [currentAdminId, setCurrentAdminId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState<UserRole | 'All'>('All');
@@ -63,22 +62,12 @@ export default function AdminUsersPage() {
       });
 
       if (!response.ok) {
-        let errorDetails = 'Falha ao buscar usuários.';
-        try {
-          const errorData = await response.json();
-          errorDetails = errorData.error || JSON.stringify(errorData);
-        } catch (jsonError) {
-          errorDetails = response.statusText || 'Erro desconhecido ao buscar usuários.';
-        }
-        throw new Error(errorDetails);
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Falha ao buscar usuários.');
       }
 
       const data: UserProfile[] = await response.json();
-      if (!Array.isArray(data)) {
-        console.error('API response for profiles is not an array:', data);
-        throw new Error('Dados de usuários inválidos recebidos do servidor. Esperado um array, mas recebeu: ' + JSON.stringify(data));
-      }
-      setUsers(data);
+      setUsers(Array.isArray(data) ? data : []); // Ensure it's always an array
     } catch (err: any) {
       console.error('Erro ao buscar usuários:', err);
       setError(err.message || 'Erro ao carregar usuários.');
@@ -124,18 +113,12 @@ export default function AdminUsersPage() {
       });
 
       if (!response.ok) {
-        let errorDetails = 'Falha ao salvar usuário.';
-        try {
-          const errorData = await response.json();
-          errorDetails = errorData.error || JSON.stringify(errorData);
-        } catch (jsonError) {
-          errorDetails = response.statusText || 'Erro desconhecido ao salvar usuário.';
-        }
-        throw new Error(errorDetails);
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Falha ao salvar usuário.');
       }
 
       toast.success('Usuário salvo com sucesso!', { id: 'saveUser' });
-      fetchUsers(); // Re-fetch users to update the list
+      fetchUsers();
     } catch (err: any) {
       console.error('Erro ao salvar usuário:', err);
       toast.error(err.message || 'Erro ao salvar usuário.', { id: 'saveUser' });
@@ -169,14 +152,8 @@ export default function AdminUsersPage() {
       });
 
       if (!response.ok) {
-        let errorDetails = 'Falha ao deletar usuário.';
-        try {
-          const errorData = await response.json();
-          errorDetails = errorData.error || JSON.stringify(errorData);
-        } catch (jsonError) {
-          errorDetails = response.statusText || 'Erro desconhecido ao deletar usuário.';
-        }
-        throw new Error(errorDetails);
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Falha ao deletar usuário.');
       }
 
       setUsers(prevUsers => prevUsers.filter(user => user.id !== userId));
@@ -215,23 +192,17 @@ export default function AdminUsersPage() {
       });
 
       if (!response.ok) {
-        let errorDetails = 'Falha ao cadastrar usuário.';
-        try {
-          const errorData = await response.json();
-          errorDetails = errorData.error || JSON.stringify(errorData);
-        } catch (jsonError) {
-          errorDetails = response.statusText || 'Erro desconhecido ao cadastrar usuário.';
-        }
-        throw new Error(errorDetails);
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Falha ao cadastrar usuário.');
       }
 
       toast.success('Usuário cadastrado com sucesso!', { id: 'createUser' });
       
       if (data.send_credentials_email) {
-        await handleResendAccess(data.email); // Reutiliza a função para enviar link de redefinição
+        await handleResendAccess(data.email);
       }
 
-      fetchUsers(); // Re-fetch users to update the list
+      fetchUsers();
     } catch (err: any) {
       console.error('Erro ao cadastrar usuário:', err);
       toast.error(err.message || 'Erro ao cadastrar usuário.', { id: 'createUser' });
@@ -242,7 +213,7 @@ export default function AdminUsersPage() {
     toast.loading('Reenviando link de acesso...', { id: 'resendAccess' });
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/login`, // Redireciona para a página de login após redefinição
+        redirectTo: `${window.location.origin}/login`,
       });
 
       if (error) {
@@ -263,7 +234,7 @@ export default function AdminUsersPage() {
       return;
     }
 
-    const newBannedStatus = !user.auth_users.banned_until; // Toggle ban status
+    const newBannedStatus = !user.auth_users.banned_until;
     const actionText = newBannedStatus ? 'inativar' : 'ativar';
 
     if (!window.confirm(`Tem certeza que deseja ${actionText} o usuário ${user.first_name || user.auth_users.email}?`)) {
@@ -294,7 +265,7 @@ export default function AdminUsersPage() {
       }
 
       toast.success(`Usuário ${actionText} com sucesso!`, { id: 'toggleStatus' });
-      fetchUsers(); // Re-fetch users to update the list
+      fetchUsers();
     } catch (err: any) {
       console.error(`Erro ao ${actionText} usuário:`, err);
       toast.error(err.message || `Erro ao ${actionText} usuário.`, { id: 'toggleStatus' });
@@ -316,25 +287,23 @@ export default function AdminUsersPage() {
     return { text: 'Ativo', color: 'bg-green-100 text-green-800', icon: <CheckCircle2 className="w-4 h-4" /> };
   };
 
-  // Calcular filteredUsers diretamente na renderização, garantindo que seja sempre um array
-  const currentFilteredUsers = Array.isArray(users) ? users.filter(user => {
-    const fullName = `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase();
-    const email = user.auth_users.email.toLowerCase();
-    const role = user.role.toLowerCase();
-    const status = getUserStatus(user).text.toLowerCase();
+  const filteredUsers = useMemo(() => {
+    return users.filter(user => {
+      const fullName = `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase();
+      const email = user.auth_users.email.toLowerCase();
+      const role = user.role.toLowerCase();
+      const status = getUserStatus(user).text.toLowerCase();
 
-    const matchesSearch = searchTerm === '' ||
-                          fullName.includes(searchTerm.toLowerCase()) ||
-                          email.includes(searchTerm.toLowerCase()) ||
-                          role.includes(searchTerm.toLowerCase()) ||
-                          status.includes(searchTerm.toLowerCase());
-                          
-    const matchesRole = filterRole === 'All' || user.role === filterRole;
-    return matchesSearch && matchesRole;
-  }) : []; // Se 'users' não for um array, retorna um array vazio
-
-  console.log('AdminUsersPage: users state (at render):', users);
-  console.log('AdminUsersPage: currentFilteredUsers value (at render):', currentFilteredUsers);
+      const matchesSearch = searchTerm === '' ||
+                            fullName.includes(searchTerm.toLowerCase()) ||
+                            email.includes(searchTerm.toLowerCase()) ||
+                            role.includes(searchTerm.toLowerCase()) ||
+                            status.includes(searchTerm.toLowerCase());
+                            
+      const matchesRole = filterRole === 'All' || user.role === filterRole;
+      return matchesSearch && matchesRole;
+    });
+  }, [users, searchTerm, filterRole, currentAdminId]); // Dependências para useMemo
 
   if (loading) {
     return (
@@ -411,7 +380,7 @@ export default function AdminUsersPage() {
         </div>
 
         <div className="bg-gray-900 p-6 rounded-xl shadow-lg border border-gray-700">
-          {currentFilteredUsers.length === 0 ? (
+          {filteredUsers.length === 0 ? (
             <p className="text-center text-gray-400 text-lg">Nenhum usuário encontrado.</p>
           ) : (
             <div className="overflow-x-auto">
@@ -438,9 +407,8 @@ export default function AdminUsersPage() {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-800" key="user-table-body">
-                  {console.log('AdminUsersPage: currentFilteredUsers IMMEDIATELY BEFORE MAP IN JSX:', currentFilteredUsers, typeof currentFilteredUsers, Array.isArray(currentFilteredUsers))}
-                  {currentFilteredUsers.map((user) => {
+                <tbody className="divide-y divide-gray-800">
+                  {filteredUsers.map((user) => {
                     const userStatus = getUserStatus(user);
                     const isSelf = user.id === currentAdminId;
                     return (
@@ -538,7 +506,7 @@ export default function AdminUsersPage() {
         <EditUserModal
           isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
-          user={{ ...editingUser, is_banned: !!editingUser.auth_users.banned_until }} // Passar is_banned corretamente
+          user={{ ...editingUser, is_banned: !!editingUser.auth_users.banned_until }}
           onSave={handleSaveUser}
           currentAdminId={currentAdminId!}
         />
