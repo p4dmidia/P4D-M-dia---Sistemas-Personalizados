@@ -1,7 +1,11 @@
 import { Hono } from "hono";
 import auth from "./routes/auth";
 import funnel from "./routes/funnel";
-import asaas from "./routes/asaas"; // Import the new asaas route
+import asaas from "./routes/asaas";
+import projects from "./routes/projects";
+import subscriptions from "./routes/subscriptions"; // Import the new subscriptions route
+import internalDocuments from "./routes/internalDocuments"; // Import the new internalDocuments route
+import tasks from "./routes/tasks"; // Import the new tasks route
 import { createWorkerSupabaseClient } from '@/integrations/supabase/workerClient'; // Import worker client factory
 import { SupabaseClient } from '@supabase/supabase-js'; // Import SupabaseClient type
 
@@ -19,6 +23,7 @@ type Variables = {
   supabase: SupabaseClient;
   supabaseAdmin: SupabaseClient; // Add admin client
   userId?: string; // Add userId to variables for middleware
+  userRole?: string; // Add userRole to variables for middleware
 };
 
 const app = new Hono<{ Bindings: Bindings, Variables: Variables }>();
@@ -38,7 +43,11 @@ app.use('*', async (c, next) => {
 // Add routes
 app.route('/api/auth', auth);
 app.route('/api/funnel', funnel);
-app.route('/api/asaas', asaas); // Add the new asaas route
+app.route('/api/asaas', asaas);
+app.route('/api/projects', projects);
+app.route('/api/subscriptions', subscriptions); // Add the new subscriptions route
+app.route('/api/internal-documents', internalDocuments); // Add the new internalDocuments route
+app.route('/api/tasks', tasks); // Add the new tasks route
 
 // Basic root route for testing
 app.get('/', (c) => {

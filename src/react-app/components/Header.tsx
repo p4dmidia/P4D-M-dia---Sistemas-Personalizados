@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Menu, X, LogIn } from 'lucide-react'; // Importar LogIn icon
+import { Menu, X, LogIn, LayoutDashboard } from 'lucide-react'; // Importar LogIn e LayoutDashboard icons
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/browserClient'; // Import supabase client
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -12,7 +15,52 @@ export default function Header() {
       setIsScrolled(window.scrollY > 50);
     };
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+
+    const checkUserSession = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsLoggedIn(!!user);
+      if (user) {
+        // Fetch profile to get the role
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+        if (profileError && profileError.code !== 'PGRST116') {
+          console.error('Error fetching user role in Header:', profileError);
+        }
+        setUserRole(profileData?.role || 'client');
+      } else {
+        setUserRole(null);
+      }
+    };
+
+    checkUserSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsLoggedIn(!!session?.user);
+      if (session?.user) {
+        // Fetch profile to get the role
+        supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .single()
+          .then(({ data: profileData, error: profileError }) => {
+            if (profileError && profileError.code !== 'PGRST116') {
+              console.error('Error fetching user role in Header (onAuthStateChange):', profileError);
+            }
+            setUserRole(profileData?.role || 'client');
+          });
+      } else {
+        setUserRole(null);
+      }
+    });
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const scrollToSection = (id: string) => {
@@ -28,8 +76,16 @@ export default function Header() {
     setIsMenuOpen(false);
   };
 
-  const handleLogin = () => {
-    navigate('/login'); // Navega para a página de login
+  const handleAuthAction = () => {
+    if (isLoggedIn) {
+      if (userRole === 'admin') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/dashboard');
+      }
+    } else {
+      navigate('/login');
+    }
     setIsMenuOpen(false);
   };
 
@@ -69,13 +125,13 @@ export default function Header() {
           </nav>
 
           {/* CTA Buttons (Desktop) */}
-          <div className="hidden md:flex items-center space-x-4"> {/* Adicionado flex e space-x-4 */}
+          <div className="hidden md:flex items-center space-x-4">
             <button
-              onClick={handleLogin}
+              onClick={handleAuthAction}
               className="text-gray-300 hover:text-blue-400 transition-colors duration-200 font-medium flex items-center gap-1"
             >
-              <LogIn className="w-5 h-5" />
-              Login
+              {isLoggedIn ? <LayoutDashboard className="w-5 h-5" /> : <LogIn className="w-5 h-5" />}
+              {isLoggedIn ? 'Meu Painel' : 'Login'}
             </button>
             <button
               onClick={handleStartFunnel}
@@ -117,11 +173,11 @@ export default function Header() {
                 </button>
               ))}
               <button
-                onClick={handleLogin}
+                onClick={handleAuthAction}
                 className="block w-full text-left px-3 py-2 text-gray-300 hover:text-blue-400 transition-colors flex items-center gap-2"
               >
-                <LogIn className="w-5 h-5" />
-                Login
+                {isLoggedIn ? <LayoutDashboard className="w-5 h-5" /> : <LogIn className="w-5 h-5" />}
+                {isLoggedIn ? 'Meu Painel' : 'Login'}
               </button>
               <button
                 onClick={handleStartFunnel}

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { supabase } from '@/integrations/supabase/browserClient';
-import { LogOut, UserCircle, Check, X, Settings, MessageCircle, Calendar, FileText, Code, Search, DollarSign, CreditCard, TrendingUp, Sparkles, Hourglass, Info, ChevronDown, ChevronUp } from 'lucide-react';
+import { LogOut, UserCircle, Check, X, Settings, MessageCircle, Calendar, FileText, Code, Search, DollarSign, CreditCard, TrendingUp, Sparkles, Hourglass, Info, ChevronDown, ChevronUp, LayoutDashboard } from 'lucide-react';
 import Confetti from 'react-confetti';
 import { Project, Subscription, FunnelResponse } from '@/shared/types'; // Import types
 import { User } from '@supabase/supabase-js'; // Import Supabase User type
@@ -27,7 +27,7 @@ const timelineSteps = [
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [userProfile, setUserProfile] = useState<{ first_name?: string; last_name?: string; email?: string; avatar_url?: string } | null>(null);
+  const [userProfile, setUserProfile] = useState<{ first_name?: string; last_name?: string; email?: string; avatar_url?: string; role?: string } | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [funnelResponse, setFunnelResponse] = useState<FunnelResponse | null>(null);
@@ -59,7 +59,7 @@ export default function Dashboard() {
       // Fetch profile
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('first_name, last_name, avatar_url, asaas_customer_id') // Fetch asaas_customer_id
+        .select('first_name, last_name, avatar_url, asaas_customer_id, role') // Fetch asaas_customer_id and role
         .eq('id', user.id)
         .single();
 
@@ -68,8 +68,13 @@ export default function Dashboard() {
         toast.error('Erro ao carregar dados do perfil.');
       } else if (profile) {
         setUserProfile({ ...profile, email: user.email });
+        // If user is admin, redirect to admin dashboard
+        if (profile.role === 'admin') {
+          navigate('/admin/dashboard');
+          return; // Stop loading client dashboard
+        }
       } else {
-        setUserProfile({ first_name: user.user_metadata.first_name || user.email?.split('@')[0], email: user.email });
+        setUserProfile({ first_name: user.user_metadata.first_name || user.email?.split('@')[0], email: user.email, role: 'client' });
       }
 
       // Fetch projects
@@ -129,7 +134,7 @@ export default function Dashboard() {
     } finally {
       setLoading(false); // Ensure loading is always set to false
     }
-  }, [navigate]); // Removed 'subscriptions' from dependencies
+  }, [navigate, subscriptions]); // Added subscriptions to dependencies
 
   useEffect(() => {
     fetchDashboardData();
@@ -277,6 +282,11 @@ export default function Dashboard() {
               </button>
               {isAvatarMenuOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-gray-100 border border-gray-200 rounded-lg shadow-lg py-1 z-10">
+                  {userProfile?.role === 'admin' && (
+                    <button onClick={() => { navigate('/admin/dashboard'); setIsAvatarMenuOpen(false); }} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-200 w-full text-left">
+                      <LayoutDashboard className="inline-block w-4 h-4 mr-2" /> Painel Admin
+                    </button>
+                  )}
                   <button onClick={() => { setActiveTab('settings'); setIsAvatarMenuOpen(false); }} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-200 w-full text-left">
                     <Settings className="inline-block w-4 h-4 mr-2" /> Perfil & Configurações
                   </button>
@@ -640,6 +650,7 @@ export default function Dashboard() {
                   <h4 className="text-xl font-semibold text-gray-900 mb-3">Dados Pessoais</h4>
                   <p className="text-gray-700">Nome: <span className="font-medium">{userProfile?.first_name} {userProfile?.last_name}</span></p>
                   <p className="text-gray-700">Email: <span className="font-medium">{userProfile?.email}</span></p>
+                  <p className="text-gray-700">Função: <span className="font-medium">{userProfile?.role === 'admin' ? 'Administrador' : 'Cliente'}</span></p>
                   <button onClick={() => toast('Funcionalidade em breve!')} className="mt-3 text-blue-600 hover:text-blue-500 text-sm">Editar Perfil</button>
                 </div>
                 <div>

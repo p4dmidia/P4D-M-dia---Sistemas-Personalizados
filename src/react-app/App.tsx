@@ -4,7 +4,8 @@ import Register from "@/react-app/pages/auth/Register";
 import Login from "@/react-app/pages/auth/Login";
 import Funnel from "@/react-app/pages/Funnel";
 import FunnelSummary from "@/react-app/pages/FunnelSummary";
-import Dashboard from "@/react-app/pages/Dashboard"; // Import the new Dashboard component
+import Dashboard from "@/react-app/pages/Dashboard";
+import AdminDashboard from "@/react-app/pages/admin/AdminDashboard"; // Import the new AdminDashboard component
 
 export default function App() {
   return (
@@ -15,9 +16,8 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/funnel" element={<Funnel />} />
         <Route path="/funnel/summary" element={<FunnelSummary />} />
-        {/* Add protected routes for client dashboard and admin panel later */}
-        <Route path="/dashboard" element={<Dashboard />} /> {/* Use the new Dashboard component */}
-        <Route path="/admin" element={<div>Admin Panel (Coming Soon)</div>} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/admin/dashboard" element={<AdminDashboard />} /> {/* New Admin Dashboard Route */}
       </Routes>
     </Router>
   );

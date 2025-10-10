@@ -20,7 +20,7 @@ export const UserSchema = z.object({
   password: z.string().min(8).optional(), // Only for input, not stored
   password_hash: z.string().optional(), // Stored hash
   name: z.string().optional(),
-  role: z.enum(['client', 'admin']).default('client'),
+  role: z.enum(['client', 'admin']).default('client'), // Adicionado o campo role
   created_at: z.string().datetime().optional(),
   updated_at: z.string().datetime().optional(),
 });

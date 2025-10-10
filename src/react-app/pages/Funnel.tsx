@@ -207,7 +207,9 @@ export default function Funnel() {
       }
     };
 
-    loadFunnelData();
+    if (userId !== null) { // Only run once userId is determined (not null, not undefined)
+      loadFunnelData();
+    }
   }, [funnelId, userId]); // Re-run if funnelId or userId changes
 
   // Autosave on formData or currentStepIndex change

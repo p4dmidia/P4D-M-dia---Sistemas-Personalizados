@@ -24,9 +24,32 @@ export default function Login() {
         console.error('Supabase login error:', error);
         toast.error(error.message || 'Credenciais inválidas. Tente novamente.');
       } else if (data.session) {
-        localStorage.setItem('userId', data.user.id);
+        const userId = data.user.id;
+        
+        // Fetch profile to get the role
+        const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', userId)
+            .single();
+
+        if (profileError && profileError.code !== 'PGRST116') { // PGRST116 means "no rows found"
+            console.error('Erro ao buscar função do usuário:', profileError);
+            toast.error('Erro ao carregar seu perfil. Tente novamente.');
+            setLoading(false); // Ensure loading is reset
+            return;
+        }
+
+        const userRole = profileData?.role || 'client'; // Default to client if role not found or null
+
+        localStorage.setItem('userId', userId);
         toast.success('Login realizado com sucesso!');
-        navigate('/dashboard'); // Redirect to client dashboard
+
+        if (userRole === 'admin') {
+            navigate('/admin/dashboard');
+        } else {
+            navigate('/dashboard'); // Redirect to client dashboard
+        }
       }
     } catch (error) {
       console.error('Login error:', error);
