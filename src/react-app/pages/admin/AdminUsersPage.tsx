@@ -111,10 +111,17 @@ export default function AdminUsersPage() {
         const matchesRole = filterRole === 'All' || user.role === filterRole;
         return matchesSearch && matchesRole;
       });
+      console.log('AdminUsersPage: Calculated filtered array before setting state:', filtered); // NOVO LOG
       setFilteredUsers(filtered);
     };
 
-    applyFilters();
+    // Garantir que 'users' é um array antes de tentar filtrar
+    if (Array.isArray(users)) {
+      applyFilters();
+    } else {
+      console.error('AdminUsersPage: users is not an array, cannot apply filters:', users);
+      setFilteredUsers([]); // Garantir que filteredUsers seja um array vazio
+    }
   }, [users, searchTerm, filterRole]); // Recalcular quando essas dependências mudarem
 
   const handleEditUser = (user: UserProfile) => {
@@ -447,7 +454,7 @@ export default function AdminUsersPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-800">
-                  {filteredUsers.map((user) => {
+                  {(filteredUsers ?? []).map((user) => { // Adicionado operador de coalescência nula aqui
                     const userStatus = getUserStatus(user);
                     const isSelf = user.id === currentAdminId;
                     return (
