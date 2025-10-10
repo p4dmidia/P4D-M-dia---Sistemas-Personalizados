@@ -3,12 +3,13 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { ChevronLeft, User, Mail, Calendar, Edit, Trash2, UserPlus, Ban, CheckCircle2, Search, Filter, Eye, ToggleLeft, ToggleRight } from 'lucide-react';
+import { ChevronLeft, User, Mail, Calendar, Edit, Trash2, UserPlus, Ban, CheckCircle2, Search, Filter, Eye, ToggleLeft, ToggleRight, Hourglass } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/browserClient'; // Importar o cliente Supabase
 import EditUserModal from '@/react-app/components/admin/EditUserModal';
 import CreateUserModal from '@/react-app/components/admin/CreateUserModal';
 import UserProjectsModal from '@/react-app/components/admin/UserProjectsModal'; // Importar o novo modal
 import { UserSchema, Project } from '@/shared/types'; // Importar UserSchema para os tipos de role e Project
+import { z } from 'zod'; // Importar z do zod
 
 type UserRole = z.infer<typeof UserSchema.shape.role>; // Definir UserRole a partir do schema
 
@@ -29,6 +30,7 @@ interface UserProfile {
 }
 
 export default function AdminUsersPage() {
+  console.log('AdminUsersPage rendering...'); // Log para depuração
   const navigate = useNavigate();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -440,7 +442,7 @@ export default function AdminUsersPage() {
                               <img className="h-8 w-8 rounded-full mr-3" src={user.avatar_url} alt="" />
                             ) : (
                               <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm mr-3">
-                                {user.first_name ? user.first_name[0] : <User className="w-4 h-4" />}
+                                {user.first_name && user.first_name.length > 0 ? user.first_name.charAt(0).toUpperCase() : <User className="w-4 h-4" />}
                               </div>
                             )}
                             <div className="text-sm font-medium text-white">
