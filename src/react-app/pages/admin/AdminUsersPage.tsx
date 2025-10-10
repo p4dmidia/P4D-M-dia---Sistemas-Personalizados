@@ -33,7 +33,7 @@ export default function AdminUsersPage() {
   console.log('AdminUsersPage rendering...'); // Log para depuração
   const navigate = useNavigate();
   const [users, setUsers] = useState<UserProfile[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<UserProfile[]>([]); // Agora é um estado
+  // Removido: const [filteredUsers, setFilteredUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -93,36 +93,7 @@ export default function AdminUsersPage() {
     fetchUsers();
   }, [navigate]);
 
-  // Efeito para atualizar filteredUsers sempre que users, searchTerm ou filterRole mudarem
-  useEffect(() => {
-    const applyFilters = () => {
-      const filtered = users.filter(user => {
-        const fullName = `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase();
-        const email = user.auth_users.email.toLowerCase();
-        const role = user.role.toLowerCase();
-        const status = getUserStatus(user).text.toLowerCase();
-
-        const matchesSearch = searchTerm === '' ||
-                              fullName.includes(searchTerm.toLowerCase()) ||
-                              email.includes(searchTerm.toLowerCase()) ||
-                              role.includes(searchTerm.toLowerCase()) ||
-                              status.includes(searchTerm.toLowerCase());
-                              
-        const matchesRole = filterRole === 'All' || user.role === filterRole;
-        return matchesSearch && matchesRole;
-      });
-      console.log('AdminUsersPage: Calculated filtered array before setting state:', filtered); // NOVO LOG
-      setFilteredUsers(filtered);
-    };
-
-    // Garantir que 'users' é um array antes de tentar filtrar
-    if (Array.isArray(users)) {
-      applyFilters();
-    } else {
-      console.error('AdminUsersPage: users is not an array, cannot apply filters:', users);
-      setFilteredUsers([]); // Garantir que filteredUsers seja um array vazio
-    }
-  }, [users, searchTerm, filterRole]); // Recalcular quando essas dependências mudarem
+  // Removido: useEffect para calcular filteredUsers
 
   const handleEditUser = (user: UserProfile) => {
     setEditingUser({
@@ -348,6 +319,23 @@ export default function AdminUsersPage() {
     return { text: 'Ativo', color: 'bg-green-100 text-green-800', icon: <CheckCircle2 className="w-4 h-4" /> };
   };
 
+  // Calcular filteredUsers diretamente na renderização
+  const filteredUsers = users.filter(user => {
+    const fullName = `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase();
+    const email = user.auth_users.email.toLowerCase();
+    const role = user.role.toLowerCase();
+    const status = getUserStatus(user).text.toLowerCase();
+
+    const matchesSearch = searchTerm === '' ||
+                          fullName.includes(searchTerm.toLowerCase()) ||
+                          email.includes(searchTerm.toLowerCase()) ||
+                          role.includes(searchTerm.toLowerCase()) ||
+                          status.includes(searchTerm.toLowerCase());
+                          
+    const matchesRole = filterRole === 'All' || user.role === filterRole;
+    return matchesSearch && matchesRole;
+  });
+
   console.log('AdminUsersPage: users state (before render):', users);
   console.log('AdminUsersPage: filteredUsers value (before render):', filteredUsers);
 
@@ -454,7 +442,7 @@ export default function AdminUsersPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-800">
-                  {(filteredUsers ?? []).map((user) => { // Adicionado operador de coalescência nula aqui
+                  {filteredUsers.map((user) => {
                     const userStatus = getUserStatus(user);
                     const isSelf = user.id === currentAdminId;
                     return (
