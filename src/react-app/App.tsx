@@ -1,12 +1,16 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom"; // Changed to react-router-dom
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import HomePage from "@/react-app/pages/Home";
 import Register from "@/react-app/pages/auth/Register";
 import Login from "@/react-app/pages/auth/Login";
 import Funnel from "@/react-app/pages/Funnel";
 import FunnelSummary from "@/react-app/pages/FunnelSummary";
 import Dashboard from "@/react-app/pages/Dashboard";
-import AdminDashboard from "@/react-app/pages/admin/AdminDashboard"; // Import the new AdminDashboard component
-import ProtectedRoute from "@/react-app/components/ProtectedRoute"; // Import ProtectedRoute
+import AdminDashboard from "@/react-app/pages/admin/AdminDashboard";
+import AdminUsersPage from "@/react-app/pages/admin/AdminUsersPage"; // Importando as novas páginas
+import AdminProjectsSubscriptionsPage from "@/react-app/pages/admin/AdminProjectsSubscriptionsPage";
+import AdminReportsAnalyticsPage from "@/react-app/pages/admin/AdminReportsAnalyticsPage";
+import AdminSettingsPage from "@/react-app/pages/admin/AdminSettingsPage";
+import ProtectedRoute from "@/react-app/components/ProtectedRoute";
 
 export default function App() {
   return (
@@ -28,12 +32,44 @@ export default function App() {
           } 
         />
         
-        {/* Rota Protegida para o Dashboard do Administrador */}
+        {/* Rotas Protegidas para o Painel do Administrador */}
         <Route 
           path="/admin/dashboard" 
           element={
             <ProtectedRoute allowedRoles={['admin']} redirectPath="/login">
               <AdminDashboard />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/admin/users" 
+          element={
+            <ProtectedRoute allowedRoles={['admin']} redirectPath="/login">
+              <AdminUsersPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/admin/projects-subscriptions" 
+          element={
+            <ProtectedRoute allowedRoles={['admin']} redirectPath="/login">
+              <AdminProjectsSubscriptionsPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/admin/reports-analytics" 
+          element={
+            <ProtectedRoute allowedRoles={['admin']} redirectPath="/login">
+              <AdminReportsAnalyticsPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/admin/settings" 
+          element={
+            <ProtectedRoute allowedRoles={['admin']} redirectPath="/login">
+              <AdminSettingsPage />
             </ProtectedRoute>
           } 
         />

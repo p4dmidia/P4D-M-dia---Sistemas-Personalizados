@@ -15,21 +15,19 @@ export default function AdminDashboard() {
     const fetchUserProfile = async () => {
       const { data: { user }, error } = await supabase.auth.getUser();
       if (error || !user) {
-        // Este caso deve ser tratado pelo ProtectedRoute, mas é bom ter um fallback
         navigate('/login');
         return;
       }
 
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('first_name') // A função (role) já é verificada pelo ProtectedRoute
+        .select('first_name')
         .eq('id', user.id)
         .single();
 
       if (profileError && profileError.code !== 'PGRST116') {
         console.error('Erro ao buscar perfil do usuário:', profileError);
         toast.error('Erro ao carregar seu perfil.');
-        // Nenhum redirecionamento aqui, o ProtectedRoute lida com acesso não autorizado
       } else {
         setUserName(profileData?.first_name || user.email?.split('@')[0] || 'Administrador');
       }
@@ -40,7 +38,7 @@ export default function AdminDashboard() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session?.user) {
-        navigate('/login'); // Se o usuário sair, redirecionar
+        navigate('/login');
       }
     });
 
@@ -102,7 +100,7 @@ export default function AdminDashboard() {
             <h3 className="text-2xl font-bold text-white mb-3">Gerenciar Usuários</h3>
             <p className="text-gray-300 mb-6">Visualize e edite perfis de clientes e administradores.</p>
             <button
-              onClick={() => toast.success('Funcionalidade em breve!')}
+              onClick={() => navigate('/admin/users')}
               className="flex items-center gap-2 px-6 py-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-all duration-200"
             >
               Acessar <ChevronLeft className="w-5 h-5 rotate-180" />
@@ -115,7 +113,7 @@ export default function AdminDashboard() {
             <h3 className="text-2xl font-bold text-white mb-3">Projetos e Assinaturas</h3>
             <p className="text-gray-300 mb-6">Acompanhe o status dos projetos e gerencie assinaturas.</p>
             <button
-              onClick={() => toast.success('Funcionalidade em breve!')}
+              onClick={() => navigate('/admin/projects-subscriptions')}
               className="flex items-center gap-2 px-6 py-3 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-semibold transition-all duration-200"
             >
               Acessar <ChevronLeft className="w-5 h-5 rotate-180" />
@@ -128,7 +126,7 @@ export default function AdminDashboard() {
             <h3 className="text-2xl font-bold text-white mb-3">Relatórios e Análises</h3>
             <p className="text-gray-300 mb-6">Visualize métricas e relatórios de desempenho.</p>
             <button
-              onClick={() => toast.success('Funcionalidade em breve!')}
+              onClick={() => navigate('/admin/reports-analytics')}
               className="flex items-center gap-2 px-6 py-3 rounded-full bg-green-600 hover:bg-green-700 text-white font-semibold transition-all duration-200"
             >
               Acessar <ChevronLeft className="w-5 h-5 rotate-180" />
@@ -141,7 +139,7 @@ export default function AdminDashboard() {
             <h3 className="text-2xl font-bold text-white mb-3">Configurações do Sistema</h3>
             <p className="text-gray-300 mb-6">Ajuste configurações globais do P4D Studio.</p>
             <button
-              onClick={() => toast.success('Funcionalidade em breve!')}
+              onClick={() => navigate('/admin/settings')}
               className="flex items-center gap-2 px-6 py-3 rounded-full bg-yellow-600 hover:bg-yellow-700 text-white font-semibold transition-all duration-200"
             >
               Acessar <ChevronLeft className="w-5 h-5 rotate-180" />
