@@ -127,7 +127,7 @@ export default function FunnelSummary() {
         'Hospedagem e suporte premium',
         'Preço sob consulta conforme complexidade'
       ],
-      stripePriceId: 'price_123_ai', // Placeholder Stripe Price ID
+      stripePriceId: 'prod_TDTvOnxumW3fLg', // Placeholder Stripe Price ID
       color: 'from-amber-600 to-orange-700',
       borderColor: 'border-amber-600'
     }
