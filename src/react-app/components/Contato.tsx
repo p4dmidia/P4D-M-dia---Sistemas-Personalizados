@@ -226,7 +226,7 @@ export default function Contato() {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-300">Anos de experiência</span>
-                  <span className="text-green-400 font-semibold">+5 anos</span>
+                  <span className="text-green-400 font-semibold">+3 anos</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-300">Taxa de sucesso</span>
