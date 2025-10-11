@@ -110,7 +110,7 @@ export default function FunnelSummary() {
         'Módulo de cashback personalizável',
         'Hospedagem e suporte técnico'
       ],
-      stripePriceId: 'price_123_crm', // Placeholder Stripe Price ID
+      stripePriceId: 'prod_TDTuezApxj2Dgv', // Placeholder Stripe Price ID
       color: 'from-red-500 to-red-600',
       borderColor: 'border-red-500'
     },
