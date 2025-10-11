@@ -41,22 +41,20 @@ export default function QuemSomos() {
           {/* Text Content */}
           <div className="space-y-6">
             <p className="text-lg text-gray-300 leading-relaxed">
-              A <span className="text-blue-400 font-semibold">P4D Mídia</span> é uma agência de marketing digital e tecnologia dedicada a impulsionar negócios por meio de sistemas personalizados e estratégias inteligentes.
+              A <span className="text-blue-400 font-semibold">P4D Mídia</span> é uma agência de marketing digital e tecnologia especializada em criar sistemas inteligentes, estratégias de vendas e soluções personalizadas que impulsionam negócios para o futuro.
             </p>
             <p className="text-lg text-gray-300 leading-relaxed">
-              Combinamos <span className="text-purple-400 font-semibold">inovação tecnológica</span>, <span className="text-cyan-400 font-semibold">expertise em marketing</span> e uma abordagem totalmente orientada a resultados.
+              Combinamos tecnologia de ponta, design moderno e inteligência de marketing para transformar ideias em plataformas funcionais e lucrativas. Nossa missão é simplificar o digital e entregar resultados reais, com agilidade, inovação e acessibilidade.
             </p>
             <p className="text-lg text-gray-300 leading-relaxed">
-              Somos apaixonados por crescimento e trabalhamos com um único propósito:<br />
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                👉 aumentar sua receita, seu faturamento e o valor da sua marca.
-              </span>
+              Somos movidos por performance, mas guiados por propósito — e é por isso que fazemos parte do <span className="text-purple-400 font-semibold">Grupo Empire (<a href="https://www.grupoempireonline.com" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">www.grupoempireonline.com</a>)</span>, um ecossistema global que conecta mídia, tecnologia, moda, saúde e benefícios em um só lugar.
             </p>
             <div className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 backdrop-blur-sm border border-blue-500/20 rounded-xl p-6">
               <p className="text-lg text-gray-200 font-medium">
-                <span className="text-red-400">Nosso diferencial?</span><br />
-                Não vendemos promessas vazias.<br />
-                Enquanto outras agências entregam curtidas, nós entregamos <span className="text-green-400 font-bold">faturamento.</span>
+                Essa parceria nos coloca lado a lado com marcas e projetos de impacto nacional e internacional, permitindo à P4D oferecer muito mais do que marketing: entregamos plataformas completas, visibilidade e crescimento em escala.
+              </p>
+              <p className="text-lg text-gray-200 font-medium mt-4">
+                Juntos, P4D Mídia e Grupo Empire estão construindo um novo modelo de negócios — onde a inovação encontra a performance e o resultado é simples: crescimento real, sustentável e em escala global. 🚀
               </p>
             </div>
             <button
