@@ -8,7 +8,8 @@ import internalDocuments from "./routes/internalDocuments";
 import tasks from "./routes/tasks";
 import profiles from "./routes/profiles";
 import settings from "./routes/settings";
-import analytics from "./routes/analytics"; // Importando a nova rota de análise
+import analytics from "./routes/analytics";
+import contact from "./routes/contact"; // Importando a nova rota de contato
 import { createWorkerSupabaseClient } from '@/integrations/supabase/workerClient';
 import { SupabaseClient } from '@supabase/supabase-js';
 
@@ -48,7 +49,8 @@ app.route('/api/internal-documents', internalDocuments);
 app.route('/api/tasks', tasks);
 app.route('/api/profiles', profiles);
 app.route('/api/settings', settings);
-app.route('/api/analytics', analytics); // Adicionando a nova rota de análise
+app.route('/api/analytics', analytics);
+app.route('/api/contact', contact); // Adicionando a nova rota de contato
 
 app.get('/', (c) => {
   return c.text('P4D Mídia API is running!');

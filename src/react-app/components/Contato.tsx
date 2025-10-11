@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Mail, Phone, MapPin, Send, Instagram, Linkedin, Youtube } from 'lucide-react';
+import toast from 'react-hot-toast'; // Importar toast para feedback ao usuário
 
 export default function Contato() {
   const [formData, setFormData] = useState({
@@ -9,20 +10,45 @@ export default function Contato() {
     company: '',
     message: ''
   });
+  const [loading, setLoading] = useState(false); // Adicionar estado de carregamento
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Aqui você integraria com seu backend ou serviço de email
-    console.log('Form submitted:', formData);
-    // Reset form
-    setFormData({
-      name: '',
-      email: '',
-      phone: '',
-      company: '',
-      message: ''
-    });
-    alert('Mensagem enviada com sucesso! Entraremos em contato em breve.');
+    setLoading(true);
+    toast.loading('Enviando mensagem...', { id: 'contactForm' }); // Mostrar toast de carregamento
+
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...formData,
+          recipientEmail: 'agenciap4d@gmail.com', // E-mail do destinatário
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Falha ao enviar mensagem.');
+      }
+
+      toast.success('Mensagem enviada com sucesso! Entraremos em contato em breve.', { id: 'contactForm' });
+      // Resetar formulário
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        company: '',
+        message: ''
+      });
+    } catch (error: any) {
+      console.error('Erro ao enviar formulário de contato:', error);
+      toast.error(error.message || 'Erro ao enviar mensagem. Tente novamente.', { id: 'contactForm' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -137,10 +163,11 @@ export default function Contato() {
 
               <button
                 type="submit"
+                disabled={loading} {/* Desabilita o botão durante o carregamento */}
                 className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-4 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-blue-500/25 flex items-center justify-center gap-2"
               >
                 <Send className="w-5 h-5" />
-                Enviar Mensagem
+                {loading ? 'Enviando...' : 'Enviar Mensagem'} {/* Altera o texto do botão */}
               </button>
             </form>
           </div>
