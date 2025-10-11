@@ -198,10 +198,13 @@ projects.delete('/:id', adminOnly, async (c) => {
 
     if (error) {
       console.error('Supabase delete project error:', error);
-      return c.json({ error: 'Failed to delete project' }, 500);
+      return c.json({ error: error.message || 'Failed to delete project' }, 500);
     }
     return c.json({ message: 'Project deleted successfully' }, 204);
+  } catch (error) { // Adicionado o bloco catch que estava faltando
+    console.error('Error deleting project:', error);
+    return c.json({ error: 'Internal server error' }, 500);
   }
-);
+});
 
 export default projects;
