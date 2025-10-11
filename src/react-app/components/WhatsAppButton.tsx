@@ -2,10 +2,7 @@ import { MessageCircle } from 'lucide-react';
 
 export default function WhatsAppButton() {
   const handleWhatsAppClick = () => {
-    const message = encodeURIComponent('Olá! Gostaria de saber mais sobre os sistemas personalizados da P4D Mídia.');
-    const phoneNumber = '5511999999999'; // Substitua pelo número real
-    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
-    window.open(whatsappUrl, '_blank');
+    window.open('https://w.app/k5ws4g', '_blank'); // Usando o link direto fornecido
   };
 
   return (

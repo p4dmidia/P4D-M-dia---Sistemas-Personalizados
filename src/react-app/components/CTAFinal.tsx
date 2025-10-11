@@ -4,15 +4,10 @@ import { useNavigate } from 'react-router-dom'; // Import useNavigate
 export default function CTAFinal() {
   const navigate = useNavigate(); // Initialize useNavigate
 
-  const scrollToSection = (id: string) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
+  // Removed scrollToSection as it's no longer needed for these buttons
 
-  const handleStartFunnel = () => {
-    navigate('/funnel'); // Navigate to the funnel page
+  const handleWhatsAppClick = () => {
+    window.open('https://w.app/k5ws4g', '_blank'); // Direct WhatsApp link
   };
 
   return (
@@ -60,14 +55,14 @@ export default function CTAFinal() {
         {/* Main CTA */}
         <div className="mb-12 flex flex-col sm:flex-row gap-4 justify-center">
           <button
-            onClick={handleStartFunnel} // Connect to funnel
+            onClick={handleWhatsAppClick} // Updated to WhatsApp link
             className="group bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500 hover:from-purple-600 hover:via-blue-600 hover:to-cyan-600 text-white font-bold py-6 px-12 rounded-full text-xl transition-all duration-300 transform hover:scale-105 shadow-2xl hover:shadow-purple-500/25 flex items-center gap-3 mx-auto"
           >
             Solicitar meu sistema agora
             <ArrowRight className="w-6 h-6 transition-transform group-hover:translate-x-1" />
           </button>
           <button
-            onClick={() => scrollToSection('contato')}
+            onClick={handleWhatsAppClick} // Updated to WhatsApp link
             className="group border-2 border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-black font-bold py-6 px-12 rounded-full text-xl transition-all duration-300 transform hover:scale-105 flex items-center gap-3 mx-auto"
           >
             Falar com especialista em marketing

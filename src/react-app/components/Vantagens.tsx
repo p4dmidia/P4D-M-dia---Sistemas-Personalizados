@@ -44,8 +44,8 @@ export default function Vantagens() {
     }
   };
 
-  const handleStartFunnel = () => {
-    navigate('/funnel'); // Navigate to the funnel page
+  const handleWhatsAppClick = () => {
+    window.open('https://w.app/k5ws4g', '_blank'); // Direct WhatsApp link
   };
 
   return (
@@ -101,7 +101,7 @@ export default function Vantagens() {
             Fale com um de nossos consultores e descubra como podemos transformar sua empresa
           </p>
           <button
-            onClick={handleStartFunnel} // Connect to funnel
+            onClick={handleWhatsAppClick} // Updated to WhatsApp link
             className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-4 px-8 rounded-full transition-all duration-300 transform hover:scale-105 shadow-2xl hover:shadow-blue-500/25"
           >
             Fale com um Consultor Agora
