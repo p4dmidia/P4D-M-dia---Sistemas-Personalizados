@@ -163,7 +163,8 @@ export default function Contato() {
 
               <button
                 type="submit"
-                disabled={loading} {/* Desabilita o botão durante o carregamento */}
+                disabled={loading} 
+                /* Desabilita o botão durante o carregamento */
                 className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-4 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-blue-500/25 flex items-center justify-center gap-2"
               >
                 <Send className="w-5 h-5" />
