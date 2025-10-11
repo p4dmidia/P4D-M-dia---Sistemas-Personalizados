@@ -88,7 +88,8 @@ export default function Planos() {
         'Áreas de membros e dashboards inteligentes',
         'Desenvolvimento sob medida',
         'Hospedagem e suporte premium',
-        'Preço sob consulta conforme complexidade'
+        'Preço sob consulta conforme complexidade',
+        'SaaS' // Adicionado SaaS aqui
       ],
       popular: false,
       color: 'from-amber-600 to-orange-700',
