@@ -17,15 +17,14 @@ export default function HeroSection() {
     setParticles(newParticles);
   }, []);
 
-  const scrollToSection = (id: string) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
+  // Removed scrollToSection as it's no longer needed for the "Falar com um especialista" button
 
   const handleStartFunnel = () => {
     navigate('/funnel'); // Navigate to the funnel page
+  };
+
+  const handleWhatsAppClick = () => {
+    window.open('https://w.app/k5ws4g', '_blank');
   };
 
   return (
@@ -112,7 +111,7 @@ export default function HeroSection() {
             </button>
             
             <button
-              onClick={() => scrollToSection('contato')}
+              onClick={handleWhatsAppClick} // Updated to WhatsApp link
               className="group border-2 border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-black font-semibold py-4 px-8 rounded-full transition-all duration-300 transform hover:scale-105 flex items-center gap-2"
             >
               <Play className="w-5 h-5" />

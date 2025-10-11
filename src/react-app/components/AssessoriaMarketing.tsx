@@ -1,8 +1,8 @@
 import { TrendingUp, Users, DollarSign, Target, BarChart3, MessageSquare } from 'lucide-react';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
+// Removed useNavigate as it's no longer needed for these buttons
 
 export default function AssessoriaMarketing() {
-  const navigate = useNavigate(); // Initialize useNavigate
+  // Removed useNavigate initialization
 
   const services = [
     {
@@ -44,15 +44,11 @@ export default function AssessoriaMarketing() {
     { number: '4', title: 'Escala do faturamento', description: 'Crescimento sustentável e previsível' }
   ];
 
-  const scrollToSection = (id: string) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
+  // Removed scrollToSection as it's no longer needed for these buttons
+  // Removed handleStartFunnel as it's no longer needed for these buttons
 
-  const handleStartFunnel = () => {
-    navigate('/funnel'); // Navigate to the funnel page
+  const handleWhatsAppClick = () => {
+    window.open('https://w.app/k5ws4g', '_blank');
   };
 
   return (
@@ -136,13 +132,13 @@ export default function AssessoriaMarketing() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
-              onClick={handleStartFunnel} // Connect to funnel
+              onClick={handleWhatsAppClick} // Updated to WhatsApp link
               className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105"
             >
               Quero aumentar minhas vendas
             </button>
             <button
-              onClick={() => scrollToSection('contato')}
+              onClick={handleWhatsAppClick} // Updated to WhatsApp link
               className="border-2 border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-black font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105"
             >
               Falar com um especialista
