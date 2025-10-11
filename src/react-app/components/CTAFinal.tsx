@@ -83,7 +83,7 @@ export default function CTAFinal() {
               <div className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent mb-2">
                 🛡️ Sem Riscos
               </div>
-              <p className="text-gray-400">Garantia de 30 dias</p>
+              <p className="text-gray-400">Garantia de 15 dias</p>
             </div>
             <div>
               <div className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent mb-2">
