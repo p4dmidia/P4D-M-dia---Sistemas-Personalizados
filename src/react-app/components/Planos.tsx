@@ -192,11 +192,11 @@ export default function Planos() {
               </div>
               <div className="flex items-center gap-2">
                 <Check className="w-5 h-5 text-green-400" />
-                <span>Sem taxa de cancelamento</span>
+                <span>Sem Fidelidade, cancele quando quiser</span>
               </div>
               <div className="flex items-center gap-2">
                 <Check className="w-5 h-5 text-green-400" />
-                <span>Atualizações inclusas</span>
+                <span>Suporte premium via WhatsApp</span>
               </div>
               <div className="flex items-center gap-2">
                 <Check className="w-5 h-5 text-green-400" />
