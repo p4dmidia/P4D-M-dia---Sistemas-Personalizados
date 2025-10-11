@@ -200,7 +200,7 @@ export default function Planos() {
               </div>
               <div className="flex items-center gap-2">
                 <Check className="w-5 h-5 text-green-400" />
-                <span>Garantia de 30 dias</span>
+                <span>Garantia de 15 dias</span>
               </div>
             </div>
           </div>
