@@ -48,7 +48,7 @@ export default function FunnelSummary() {
         'Hospedagem inclusa',
         'Suporte via WhatsApp'
       ],
-      stripePriceId: 'price_123_site', // Placeholder Stripe Price ID
+      stripePriceId: 'prod_TDTse4ZbMPxKAx', // Placeholder Stripe Price ID
       color: 'from-blue-500 to-blue-600',
       borderColor: 'border-blue-500'
     },
