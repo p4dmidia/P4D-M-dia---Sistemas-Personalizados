@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import { SupabaseClient } from '@supabase/supabase-js';
-import Stripe from 'https://esm.sh/stripe@19.1.0?target=deno'; // Import Stripe via esm.sh
+import Stripe from 'https://esm.sh/stripe@19.1.0'; // Import Stripe via esm.sh, sem ?target=deno
 
 type Bindings = {
   STRIPE_SECRET_KEY: string; // Stripe Secret Key
