@@ -77,15 +77,15 @@ export default function Footer() {
             <ul className="space-y-2">
               <li>
                 <a
-                  href="mailto:contato@p4dmidia.com"
+                  href="mailto:contato@p4dmidia.com.br"
                   className="text-gray-400 hover:text-blue-400 transition-colors duration-200"
                 >
-                  contato@p4dmidia.com
+                  contato@p4dmidia.com.br
                 </a>
               </li>
               <li>
                 <a
-                  href="https://wa.me/5511999999999"
+                  href="https://w.app/k5ws4g"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-gray-400 hover:text-green-400 transition-colors duration-200 flex items-center gap-2"

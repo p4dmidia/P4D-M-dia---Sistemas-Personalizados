@@ -158,7 +158,7 @@ export default function Contato() {
                   </div>
                   <div>
                     <h4 className="text-lg font-semibold text-white">Email</h4>
-                    <p className="text-gray-400">contato@p4dmidia.com</p>
+                    <p className="text-gray-400">contato@p4dmidia.com.br</p>
                   </div>
                 </div>
 
