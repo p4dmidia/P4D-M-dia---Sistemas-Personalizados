@@ -168,7 +168,8 @@ export default function Contato() {
                   </div>
                   <div>
                     <h4 className="text-lg font-semibold text-white">WhatsApp</h4>
-                    <p className="text-gray-400">(11) 99999-9999</p>
+                    <p className="text-gray-400">(31) 99607-0786</p>
+                    <p className="text-gray-400">(34) 99675-6400</p>
                   </div>
                 </div>
 
