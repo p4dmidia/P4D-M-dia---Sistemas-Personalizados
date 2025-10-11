@@ -10,6 +10,7 @@ import AdminUsersPage from "@/react-app/pages/admin/AdminUsersPage"; // Importan
 import AdminProjectsSubscriptionsPage from "@/react-app/pages/admin/AdminProjectsSubscriptionsPage";
 import AdminReportsAnalyticsPage from "@/react-app/pages/admin/AdminReportsAnalyticsPage";
 import AdminSettingsPage from "@/react-app/pages/admin/AdminSettingsPage";
+import PrivacyPolicy from "@/react-app/pages/PrivacyPolicy"; // Importando a nova página de Políticas de Privacidade
 import ProtectedRoute from "@/react-app/components/ProtectedRoute";
 
 export default function App() {
@@ -21,6 +22,7 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/funnel" element={<Funnel />} />
         <Route path="/funnel/summary" element={<FunnelSummary />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} /> {/* Nova rota */}
         
         {/* Rota Protegida para o Dashboard do Cliente */}
         <Route 

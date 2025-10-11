@@ -1,4 +1,5 @@
 import { Instagram, Linkedin, Youtube, MessageCircle } from 'lucide-react';
+import { Link } from 'react-router-dom'; // Importar Link do react-router-dom
 
 export default function Footer() {
   const scrollToSection = (id: string) => {
@@ -108,9 +109,9 @@ export default function Footer() {
               © 2025 P4D Mídia. Todos os direitos reservados.
             </p>
             <div className="flex gap-6 text-sm">
-              <a href="#" className="text-gray-400 hover:text-blue-400 transition-colors">
+              <Link to="/privacy-policy" className="text-gray-400 hover:text-blue-400 transition-colors">
                 Política de Privacidade
-              </a>
+              </Link>
               <a href="#" className="text-gray-400 hover:text-blue-400 transition-colors">
                 Termos de Uso
               </a>
