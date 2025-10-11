@@ -63,7 +63,7 @@ export default function FunnelSummary() {
         'Otimização para conversão e tráfego pago',
         'Hospedagem e suporte inclusos'
       ],
-      stripePriceId: 'price_123_ecommerce', // Placeholder Stripe Price ID
+      stripePriceId: 'prod_TDTsoWBhLF2EwU', // Placeholder Stripe Price ID
       color: 'from-green-500 to-green-600',
       borderColor: 'border-green-500'
     },
