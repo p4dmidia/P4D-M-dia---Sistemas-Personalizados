@@ -70,25 +70,16 @@ export default function ComoFunciona() {
           ))}
         </div>
 
-        {/* Delivery Times */}
+        {/* Simplified Delivery Time */}
         <div className="text-center mb-12">
           <h3 className="text-3xl font-bold mb-6">
             <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
               Tempo de Entrega
             </span>
           </h3>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto mb-12">
-          <div className="bg-gradient-to-br from-gray-800/30 to-gray-900/30 backdrop-blur-sm border border-gray-700/30 rounded-xl p-6 text-center hover:border-green-500/50 transition-all duration-300">
-            <div className="text-3xl font-bold text-green-400 mb-3">2 dias úteis</div>
-            <h4 className="text-lg font-semibold text-white mb-3">Sites, Lojas e Cardápios</h4>
-            <p className="text-gray-400">Projetos mais simples são entregues rapidamente</p>
-          </div>
-          <div className="bg-gradient-to-br from-gray-800/30 to-gray-900/30 backdrop-blur-sm border border-gray-700/30 rounded-xl p-6 text-center hover:border-blue-500/50 transition-all duration-300">
-            <div className="text-3xl font-bold text-blue-400 mb-3">7 dias úteis</div>
-            <h4 className="text-lg font-semibold text-white mb-3">Sistemas Complexos</h4>
-            <p className="text-gray-400">CRM, IA e funcionalidades avançadas</p>
+          <div className="bg-gradient-to-br from-gray-800/30 to-gray-900/30 backdrop-blur-sm border border-gray-700/30 rounded-xl p-6 max-w-2xl mx-auto">
+            <div className="text-3xl font-bold text-blue-400 mb-3">2 a 7 dias úteis</div>
+            <p className="text-gray-400">Seu sistema personalizado entregue rapidamente, pronto para uso.</p>
           </div>
         </div>
 
