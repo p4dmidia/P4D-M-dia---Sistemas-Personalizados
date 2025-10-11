@@ -99,7 +99,7 @@ export default function QuemSomos() {
                 <Award className="w-6 h-6 text-white" />
               </div>
               <div className="text-3xl font-bold bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent mb-2">
-                5+
+                3+
               </div>
               <div className="text-gray-400 text-sm">Anos de Experiência</div>
             </div>
