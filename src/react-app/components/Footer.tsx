@@ -112,9 +112,9 @@ export default function Footer() {
               <Link to="/privacy-policy" className="text-gray-400 hover:text-blue-400 transition-colors">
                 Política de Privacidade
               </Link>
-              <a href="#" className="text-gray-400 hover:text-blue-400 transition-colors">
+              <Link to="/terms-of-use" className="text-gray-400 hover:text-blue-400 transition-colors">
                 Termos de Uso
-              </a>
+              </Link>
             </div>
           </div>
         </div>

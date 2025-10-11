@@ -6,11 +6,12 @@ import Funnel from "@/react-app/pages/Funnel";
 import FunnelSummary from "@/react-app/pages/FunnelSummary";
 import Dashboard from "@/react-app/pages/Dashboard";
 import AdminDashboard from "@/react-app/pages/admin/AdminDashboard";
-import AdminUsersPage from "@/react-app/pages/admin/AdminUsersPage"; // Importando as novas páginas
+import AdminUsersPage from "@/react-app/pages/admin/AdminUsersPage";
 import AdminProjectsSubscriptionsPage from "@/react-app/pages/admin/AdminProjectsSubscriptionsPage";
 import AdminReportsAnalyticsPage from "@/react-app/pages/admin/AdminReportsAnalyticsPage";
 import AdminSettingsPage from "@/react-app/pages/admin/AdminSettingsPage";
-import PrivacyPolicy from "@/react-app/pages/PrivacyPolicy"; // Importando a nova página de Políticas de Privacidade
+import PrivacyPolicy from "@/react-app/pages/PrivacyPolicy";
+import TermsOfUse from "@/react-app/pages/TermsOfUse"; // Importando a nova página de Termos de Uso
 import ProtectedRoute from "@/react-app/components/ProtectedRoute";
 
 export default function App() {
@@ -22,7 +23,8 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/funnel" element={<Funnel />} />
         <Route path="/funnel/summary" element={<FunnelSummary />} />
-        <Route path="/privacy-policy" element={<PrivacyPolicy />} /> {/* Nova rota */}
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/terms-of-use" element={<TermsOfUse />} /> {/* Nova rota */}
         
         {/* Rota Protegida para o Dashboard do Cliente */}
         <Route 
