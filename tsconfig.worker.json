@@ -6,7 +6,8 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    "importMap": "./src/worker/import_map.json"
   },
   "include": ["src/worker"]
 }
