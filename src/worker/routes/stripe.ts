@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import { SupabaseClient } from '@supabase/supabase-js';
-import Stripe from 'npm:stripe@16.2.0'; // Import Stripe
+import Stripe from 'npm:stripe@19.1.0'; // Import Stripe - Versão atualizada
 
 type Bindings = {
   STRIPE_SECRET_KEY: string; // Stripe Secret Key
