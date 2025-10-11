@@ -39,7 +39,7 @@ export default function FunnelSummary() {
     {
       name: '🟦 Site Institucional',
       price: 'R$ 29,90',
-      amount: 29.90, // Add numeric amount for Asaas
+      amount: 29.90,
       description: 'Perfeito para empresas e profissionais que desejam uma presença digital moderna e profissional',
       features: [
         'Página institucional completa (Home, Sobre, Serviços e Contato)',
@@ -48,14 +48,14 @@ export default function FunnelSummary() {
         'Hospedagem inclusa',
         'Suporte via WhatsApp'
       ],
-      asaasId: 'asaas_plan_site', // Placeholder Asaas ID
+      stripePriceId: 'price_123_site', // Placeholder Stripe Price ID
       color: 'from-blue-500 to-blue-600',
       borderColor: 'border-blue-500'
     },
     {
       name: '🟩 E-commerce ou Landing Page de Alta Conversão',
       price: 'R$ 49,90',
-      amount: 49.90, // Add numeric amount for Asaas
+      amount: 49.90,
       description: 'Feito para quem quer vender online ou gerar leads todos os dias',
       features: [
         'Loja virtual ou landing page personalizada',
@@ -63,14 +63,14 @@ export default function FunnelSummary() {
         'Otimização para conversão e tráfego pago',
         'Hospedagem e suporte inclusos'
       ],
-      asaasId: 'asaas_plan_ecommerce', // Placeholder Asaas ID
+      stripePriceId: 'price_123_ecommerce', // Placeholder Stripe Price ID
       color: 'from-green-500 to-green-600',
       borderColor: 'border-green-500'
     },
     {
       name: '🟧 Cardápio Digital para Delivery',
       price: 'R$ 79,90',
-      amount: 79.90, // Add numeric amount for Asaas
+      amount: 79.90,
       description: 'Ideal para restaurantes e lanchonetes que querem digitalizar o atendimento',
       features: [
         'Cardápio digital interativo com fotos e preços',
@@ -79,14 +79,14 @@ export default function FunnelSummary() {
         'Layout responsivo',
         'Hospedagem e suporte inclusos'
       ],
-      asaasId: 'asaas_plan_menu', // Placeholder Asaas ID
+      stripePriceId: 'price_123_menu', // Placeholder Stripe Price ID
       color: 'from-orange-500 to-orange-600',
       borderColor: 'border-orange-500'
     },
     {
       name: '🟪 E-commerce com Afiliados / Clube de Assinatura / Pontuação por CPF',
       price: 'R$ 119,90',
-      amount: 119.90, // Add numeric amount for Asaas
+      amount: 119.90,
       description: 'Transforme seu negócio em um sistema de vendas completo',
       features: [
         'Loja virtual personalizada',
@@ -95,14 +95,14 @@ export default function FunnelSummary() {
         'Sistema de pontos e fidelidade por CPF',
         'Hospedagem e suporte inclusos'
       ],
-      asaasId: 'asaas_plan_affiliate', // Placeholder Asaas ID
+      stripePriceId: 'price_123_affiliate', // Placeholder Stripe Price ID
       color: 'from-purple-500 to-purple-600',
       borderColor: 'border-purple-500'
     },
     {
       name: '🟥 CRM, Sistemas Internos e Cashback',
       price: 'R$ 149,90',
-      amount: 149.90, // Add numeric amount for Asaas
+      amount: 149.90,
       description: 'Controle total do seu negócio em um único painel',
       features: [
         'CRM com gestão de clientes e pipeline',
@@ -110,14 +110,14 @@ export default function FunnelSummary() {
         'Módulo de cashback personalizável',
         'Hospedagem e suporte técnico'
       ],
-      asaasId: 'asaas_plan_crm', // Placeholder Asaas ID
+      stripePriceId: 'price_123_crm', // Placeholder Stripe Price ID
       color: 'from-red-500 to-red-600',
       borderColor: 'border-red-500'
     },
     {
       name: '🟫 Sistemas com Inteligência Artificial',
       price: 'A partir de R$ 199,90',
-      amount: 199.90, // Add numeric amount for Asaas (base price)
+      amount: 199.90,
       description: 'A era da IA chegou, e sua empresa pode estar à frente',
       features: [
         'Chatbots e agentes inteligentes (LLM)',
@@ -127,7 +127,7 @@ export default function FunnelSummary() {
         'Hospedagem e suporte premium',
         'Preço sob consulta conforme complexidade'
       ],
-      asaasId: 'asaas_plan_ai', // Placeholder Asaas ID
+      stripePriceId: 'price_123_ai', // Placeholder Stripe Price ID
       color: 'from-amber-600 to-orange-700',
       borderColor: 'border-amber-600'
     }
@@ -264,23 +264,18 @@ export default function FunnelSummary() {
 
   const handleSelectPlan = async (plan: typeof plans[0]) => {
     setLoading(true);
-    toast.loading('Preparando sua assinatura...', { id: 'asaas-checkout' });
+    toast.loading('Preparando seu checkout Stripe...', { id: 'stripe-checkout' });
 
     try {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
-      console.log('Frontend: Session data:', session);
-      console.log('Frontend: Session error:', sessionError);
-
       if (sessionError || !session || !session.access_token) {
-        toast.error('Sua sessão expirou ou não está ativa. Por favor, faça login novamente.', { id: 'asaas-checkout' });
+        toast.error('Sua sessão expirou ou não está ativa. Por favor, faça login novamente.', { id: 'stripe-checkout' });
         navigate('/login');
         return;
       }
 
-      console.log('Frontend: Access Token:', session.access_token);
-
-      const response = await fetch('/api/asaas/create-subscription', {
+      const response = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -288,29 +283,28 @@ export default function FunnelSummary() {
         },
         body: JSON.stringify({
           plan_name: plan.name,
-          amount: plan.amount,
-          asaas_plan_id: plan.asaasId,
+          stripe_price_id: plan.stripePriceId,
           funnel_response_id: funnelId, // Pass funnelId if available
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('Frontend: Failed to create Asaas subscription:', errorData);
-        toast.error(errorData.error || 'Erro ao criar assinatura no Asaas.', { id: 'asaas-checkout' });
+        console.error('Frontend: Failed to create Stripe checkout session:', errorData);
+        toast.error(errorData.error || 'Erro ao criar sessão de checkout do Stripe.', { id: 'stripe-checkout' });
         setLoading(false);
         return;
       }
 
-      const { checkoutUrl, subscriptionId } = await response.json();
-      toast.success('Redirecionando para o pagamento...', { id: 'asaas-checkout' });
+      const { checkoutUrl } = await response.json();
+      toast.success('Redirecionando para o pagamento...', { id: 'stripe-checkout' });
       
-      // Redirect to Asaas checkout page
+      // Redirect to Stripe checkout page
       window.location.href = checkoutUrl;
 
     } catch (error) {
-      console.error('Frontend: Error during Asaas subscription creation:', error);
-      toast.error('Erro de conexão ao ativar o plano.', { id: 'asaas-checkout' });
+      console.error('Frontend: Error during Stripe checkout session creation:', error);
+      toast.error('Erro de conexão ao ativar o plano.', { id: 'stripe-checkout' });
       setLoading(false);
     }
   };

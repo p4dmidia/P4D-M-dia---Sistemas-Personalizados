@@ -195,7 +195,7 @@ internalDocuments.delete('/:id', adminOnly, async (c) => {
 
     if (error) {
       console.error('Supabase delete internal document error:', error);
-      return c.json({ error: 'Failed to delete internal document' }, 500);
+      return c.json({ error: error.message || 'Failed to delete internal document' }, 500);
     }
     return c.json({ message: 'Internal document deleted successfully' }, 204);
   } catch (error) {

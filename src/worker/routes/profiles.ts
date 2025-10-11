@@ -69,7 +69,7 @@ profiles.get('/', adminOnly, async (c) => {
     // Seleciona dados do perfil e faz um join com a tabela auth.users para obter o email
     const { data: profilesData, error: profilesError } = await supabaseAdmin
       .from('profiles')
-      .select('id, first_name, last_name, avatar_url, role, updated_at, asaas_customer_id');
+      .select('id, first_name, last_name, avatar_url, role, updated_at, stripe_customer_id'); // Removido asaas_customer_id
 
     if (profilesError) {
       console.error('Supabase fetch all profiles error:', profilesError);

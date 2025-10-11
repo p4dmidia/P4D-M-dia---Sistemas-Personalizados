@@ -7,7 +7,7 @@ import { Subscription } from '@/shared/types';
 interface CreateSubscriptionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (data: Omit<Subscription, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
+  onCreate: (data: Omit<Subscription, 'id' | 'created_at' | 'updated_at' | 'asaas_subscription_id'>) => Promise<void>; // Removido asaas_subscription_id
   users: { id: string; email: string; first_name: string | null; last_name: string | null }[];
 }
 
@@ -20,7 +20,8 @@ const subscriptionStatusOptions = [
 
 export default function CreateSubscriptionModal({ isOpen, onClose, onCreate, users }: CreateSubscriptionModalProps) {
   const [userId, setUserId] = useState('');
-  const [asaasSubscriptionId, setAsaasSubscriptionId] = useState('');
+  const [stripeSubscriptionId, setStripeSubscriptionId] = useState(''); // Alterado para Stripe
+  const [stripePriceId, setStripePriceId] = useState(''); // Adicionado Stripe Price ID
   const [planName, setPlanName] = useState('');
   const [amount, setAmount] = useState<number | ''>('');
   const [status, setStatus] = useState('pending');
@@ -37,7 +38,8 @@ export default function CreateSubscriptionModal({ isOpen, onClose, onCreate, use
     try {
       await onCreate({
         user_id: userId,
-        asaas_subscription_id: asaasSubscriptionId || undefined,
+        stripe_subscription_id: stripeSubscriptionId || undefined, // Alterado para Stripe
+        stripe_price_id: stripePriceId || undefined, // Adicionado Stripe Price ID
         plan_name: planName,
         amount: amount as number,
         status,
@@ -45,7 +47,8 @@ export default function CreateSubscriptionModal({ isOpen, onClose, onCreate, use
       });
       // Reset form
       setUserId('');
-      setAsaasSubscriptionId('');
+      setStripeSubscriptionId('');
+      setStripePriceId('');
       setPlanName('');
       setAmount('');
       setStatus('pending');
@@ -165,17 +168,33 @@ export default function CreateSubscriptionModal({ isOpen, onClose, onCreate, use
           </div>
 
           <div>
-            <label htmlFor="asaasSubscriptionId" className="block text-sm font-medium text-gray-300 mb-2">
-              ID da Assinatura Asaas (opcional)
+            <label htmlFor="stripeSubscriptionId" className="block text-sm font-medium text-gray-300 mb-2">
+              ID da Assinatura Stripe (opcional)
             </label>
             <div className="relative">
               <input
                 type="text"
-                id="asaasSubscriptionId"
-                value={asaasSubscriptionId}
-                onChange={(e) => setAsaasSubscriptionId(e.target.value)}
+                id="stripeSubscriptionId"
+                value={stripeSubscriptionId}
+                onChange={(e) => setStripeSubscriptionId(e.target.value)}
                 className="w-full pl-4 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="ID do Asaas, se aplicável"
+                placeholder="ID do Stripe, se aplicável"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="stripePriceId" className="block text-sm font-medium text-gray-300 mb-2">
+              ID do Preço Stripe (opcional)
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                id="stripePriceId"
+                value={stripePriceId}
+                onChange={(e) => setStripePriceId(e.target.value)}
+                className="w-full pl-4 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="ID do Preço do Stripe, se aplicável"
               />
             </div>
           </div>

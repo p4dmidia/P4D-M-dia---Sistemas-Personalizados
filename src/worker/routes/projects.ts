@@ -201,10 +201,7 @@ projects.delete('/:id', adminOnly, async (c) => {
       return c.json({ error: 'Failed to delete project' }, 500);
     }
     return c.json({ message: 'Project deleted successfully' }, 204);
-  } catch (error) {
-    console.error('Error deleting project:', error);
-    return c.json({ error: 'Internal server error' }, 500);
   }
-});
+);
 
 export default projects;

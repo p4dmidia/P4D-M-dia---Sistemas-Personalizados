@@ -27,7 +27,7 @@ const timelineSteps = [
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [userProfile, setUserProfile] = useState<{ first_name?: string; last_name?: string; email?: string; avatar_url?: string; role?: string } | null>(null);
+  const [userProfile, setUserProfile] = useState<{ first_name?: string; last_name?: string; email?: string; avatar_url?: string; role?: string; stripe_customer_id?: string } | null>(null); // Adicionado stripe_customer_id
   const [projects, setProjects] = useState<Project[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [funnelResponse, setFunnelResponse] = useState<FunnelResponse | null>(null);
@@ -59,7 +59,7 @@ export default function Dashboard() {
       // Buscar perfil
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('first_name, last_name, avatar_url, asaas_customer_id, role')
+        .select('first_name, last_name, avatar_url, stripe_customer_id, role') // Alterado para stripe_customer_id
         .eq('id', user.id)
         .single();
 
@@ -176,19 +176,57 @@ export default function Dashboard() {
   };
 
   const handleActivatePlan = () => {
-    // Isso idealmente navegaria para uma página de checkout ou diretamente para o Asaas
+    // Isso idealmente navegaria para uma página de checkout ou diretamente para o Stripe
     // Por enquanto, vamos navegar para o resumo do funil onde os planos são listados.
     navigate('/funnel/summary');
-    toast('Redirecionando para a seleção de planos...'); // Alterado toast.info para toast()
+    toast('Redirecionando para a seleção de planos...');
   };
 
-  const handleManagePayment = () => {
-    toast('Redirecionando para o painel de pagamentos Asaas (funcionalidade em breve)!'); // Alterado toast.info para toast()
-    // Em um cenário real, você redirecionaria para o portal do cliente Asaas ou uma fatura específica.
+  const handleManagePayment = async () => {
+    if (!userProfile?.stripe_customer_id) {
+      toast.error('ID de cliente Stripe não encontrado. Por favor, entre em contato com o suporte.');
+      return;
+    }
+
+    toast.loading('Redirecionando para o portal do cliente Stripe...', { id: 'stripePortal' });
+    try {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session || !session.access_token) {
+        toast.error('Sua sessão expirou. Por favor, faça login novamente.', { id: 'stripePortal' });
+        navigate('/login');
+        return;
+      }
+
+      // Chamar uma nova rota no worker para criar uma sessão do portal do cliente Stripe
+      const response = await fetch('/api/stripe/create-customer-portal-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          customer_id: userProfile.stripe_customer_id,
+          return_url: window.location.href, // Retorna para o dashboard após gerenciar
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Falha ao criar sessão do portal do cliente Stripe.');
+      }
+
+      const { portalUrl } = await response.json();
+      toast.success('Redirecionando...', { id: 'stripePortal' });
+      window.location.href = portalUrl;
+
+    } catch (error: any) {
+      console.error('Erro ao gerenciar pagamento Stripe:', error);
+      toast.error(error.message || 'Erro ao gerenciar pagamento. Tente novamente.', { id: 'stripePortal' });
+    }
   };
 
   const handleChangePlan = () => {
-    toast('Redirecionando para a página de troca de planos (funcionalidade em breve)!'); // Alterado toast.info para toast()
+    toast('Redirecionando para a página de troca de planos (funcionalidade em breve)!');
     // Redirecionar para uma página de seleção de planos
   };
 
@@ -198,35 +236,45 @@ export default function Dashboard() {
   };
 
   const handleCancelSubscription = async () => {
-    if (!selectedSubscriptionIdForCancellation) return;
+    if (!selectedSubscriptionIdForCancellation || !currentSubscription?.stripe_subscription_id) return;
 
     setLoading(true);
     setShowCancelConfirmation(false);
     toast.loading('Cancelando assinatura...', { id: 'cancelToast' });
 
     try {
-      // Em um cenário real, você chamaria seu backend (Hono Edge Function)
-      // que então interagiria com a API Asaas para cancelar a assinatura.
-      // Por enquanto, vamos simular um cancelamento bem-sucedido e atualizar o Supabase.
-
-      // Simular atraso da chamada da API
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      const { error } = await supabase
-        .from('subscriptions')
-        .update({ status: 'canceled', updated_at: new Date().toISOString() })
-        .eq('id', selectedSubscriptionIdForCancellation);
-
-      if (error) {
-        console.error('Erro ao cancelar assinatura no Supabase:', error);
-        toast.error(`Erro ao cancelar assinatura: ${error.message}`, { id: 'cancelToast' });
-      } else {
-        toast.success('Assinatura cancelada com sucesso!', { id: 'cancelToast' });
-        fetchDashboardData(); // Re-buscar dados para atualizar a UI
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session || !session.access_token) {
+        toast.error('Sua sessão expirou. Por favor, faça login novamente.', { id: 'cancelToast' });
+        navigate('/login');
+        return;
       }
-    } catch (error) {
+
+      // Chamar uma nova rota no worker para cancelar a assinatura Stripe
+      const response = await fetch('/api/stripe/cancel-subscription', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          stripe_subscription_id: currentSubscription.stripe_subscription_id,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Falha ao cancelar assinatura.');
+      }
+
+      toast.success('Assinatura cancelada com sucesso! O status será atualizado em breve.', { id: 'cancelToast' });
+      // O webhook do Stripe irá atualizar o status no Supabase, então não precisamos chamar fetchDashboardData imediatamente.
+      // Apenas atualizamos o estado local para refletir a intenção.
+      setSubscriptions(prev => prev.map(sub => sub.id === selectedSubscriptionIdForCancellation ? { ...sub, status: 'canceled' } : sub));
+
+    } catch (error: any) {
       console.error('Erro ao cancelar assinatura:', error);
-      toast.error('Erro de conexão ao cancelar assinatura.', { id: 'cancelToast' });
+      toast.error(error.message || 'Erro de conexão ao cancelar assinatura.', { id: 'cancelToast' });
     } finally {
       setLoading(false);
       setSelectedSubscriptionIdForCancellation(null);
@@ -443,7 +491,7 @@ export default function Dashboard() {
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-gray-300">Método de Pagamento:</span>
-                      <span className="text-white font-semibold">Cartão de Crédito (Asaas)</span> {/* Placeholder */}
+                      <span className="text-white font-semibold">Cartão de Crédito (Stripe)</span> {/* Alterado para Stripe */}
                     </div>
                     <div className="flex flex-col gap-3 mt-6">
                       <button

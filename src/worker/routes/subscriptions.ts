@@ -62,11 +62,11 @@ const adminOnly = async (c: any, next: any) => {
   await next();
 };
 
-// Create a new subscription (typically handled by Asaas webhook, but admin might manually create)
+// Create a new subscription (typically handled by Stripe webhook, but admin might manually create)
 subscriptions.post(
   '/',
   adminOnly, // Only admins can manually create subscriptions via API
-  zValidator('json', SubscriptionSchema.omit({ id: true, created_at: true, updated_at: true })),
+  zValidator('json', SubscriptionSchema.omit({ id: true, created_at: true, updated_at: true, asaas_subscription_id: true })), // Removido asaas_subscription_id
   async (c) => {
     const subscriptionData = c.req.valid('json');
     const supabaseAdmin = c.get('supabaseAdmin');
@@ -143,7 +143,7 @@ subscriptions.get('/:id', async (c) => {
 subscriptions.put(
   '/:id',
   adminOnly, // For full updates, require admin
-  zValidator('json', SubscriptionSchema.partial().omit({ id: true, user_id: true, created_at: true })),
+  zValidator('json', SubscriptionSchema.partial().omit({ id: true, user_id: true, created_at: true, asaas_subscription_id: true })), // Removido asaas_subscription_id
   async (c) => {
     const subscriptionId = c.req.param('id');
     const updateData = c.req.valid('json');

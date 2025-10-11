@@ -192,7 +192,7 @@ export default function AdminProjectsSubscriptionsPage() {
     }
   };
 
-  const handleCreateSubscription = async (data: Omit<Subscription, 'id' | 'created_at' | 'updated_at'>) => {
+  const handleCreateSubscription = async (data: Omit<Subscription, 'id' | 'created_at' | 'updated_at' | 'asaas_subscription_id'>) => { // Removido asaas_subscription_id
     toast.loading('Criando nova assinatura...', { id: 'createSubscription' });
     try {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();

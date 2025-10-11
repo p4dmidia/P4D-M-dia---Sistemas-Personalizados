@@ -56,7 +56,8 @@ export type Project = z.infer<typeof ProjectSchema>;
 export const SubscriptionSchema = z.object({
   id: z.string().uuid().optional(),
   user_id: z.string().uuid(),
-  asaas_subscription_id: z.string().optional(),
+  stripe_subscription_id: z.string().optional(), // Mantido Stripe
+  stripe_price_id: z.string().optional(), // Mantido Stripe
   plan_name: z.string(),
   amount: z.number(),
   status: z.string().default('pending'),
