@@ -95,7 +95,7 @@ export default function FunnelSummary() {
         'Sistema de pontos e fidelidade por CPF',
         'Hospedagem e suporte inclusos'
       ],
-      stripePriceId: 'price_123_affiliate', // Placeholder Stripe Price ID
+      stripePriceId: 'prod_TDTuyosENlPDSg', // Placeholder Stripe Price ID
       color: 'from-purple-500 to-purple-600',
       borderColor: 'border-purple-500'
     },
