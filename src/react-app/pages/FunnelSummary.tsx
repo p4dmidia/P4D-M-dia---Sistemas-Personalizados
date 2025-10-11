@@ -48,7 +48,7 @@ export default function FunnelSummary() {
         'Hospedagem inclusa',
         'Suporte via WhatsApp'
       ],
-      stripePriceId: 'prod_TDTse4ZbMPxKAx', // Placeholder Stripe Price ID
+      stripePriceId: 'SEU_STRIPE_PRICE_ID_AQUI_SITE_INSTITUCIONAL', // SUBSTITUA ESTE ID
       color: 'from-blue-500 to-blue-600',
       borderColor: 'border-blue-500'
     },
@@ -63,7 +63,7 @@ export default function FunnelSummary() {
         'Otimização para conversão e tráfego pago',
         'Hospedagem e suporte inclusos'
       ],
-      stripePriceId: 'prod_TDTsoWBhLF2EwU', // Placeholder Stripe Price ID
+      stripePriceId: 'SEU_STRIPE_PRICE_ID_AQUI_ECOMMERCE', // SUBSTITUA ESTE ID
       color: 'from-green-500 to-green-600',
       borderColor: 'border-green-500'
     },
@@ -79,7 +79,7 @@ export default function FunnelSummary() {
         'Layout responsivo',
         'Hospedagem e suporte inclusos'
       ],
-      stripePriceId: 'prod_TDTtaYV89cg6xI', // Placeholder Stripe Price ID
+      stripePriceId: 'SEU_STRIPE_PRICE_ID_AQUI_CARDAPIO_DIGITAL', // SUBSTITUA ESTE ID
       color: 'from-orange-500 to-orange-600',
       borderColor: 'border-orange-500'
     },
@@ -95,7 +95,7 @@ export default function FunnelSummary() {
         'Sistema de pontos e fidelidade por CPF',
         'Hospedagem e suporte inclusos'
       ],
-      stripePriceId: 'prod_TDTuyosENlPDSg', // Placeholder Stripe Price ID
+      stripePriceId: 'SEU_STRIPE_PRICE_ID_AQUI_AFILIADOS', // SUBSTITUA ESTE ID
       color: 'from-purple-500 to-purple-600',
       borderColor: 'border-purple-500'
     },
@@ -110,7 +110,7 @@ export default function FunnelSummary() {
         'Módulo de cashback personalizável',
         'Hospedagem e suporte técnico'
       ],
-      stripePriceId: 'prod_TDTuezApxj2Dgv', // Placeholder Stripe Price ID
+      stripePriceId: 'SEU_STRIPE_PRICE_ID_AQUI_CRM', // SUBSTITUA ESTE ID
       color: 'from-red-500 to-red-600',
       borderColor: 'border-red-500'
     },
@@ -127,7 +127,7 @@ export default function FunnelSummary() {
         'Hospedagem e suporte premium',
         'Preço sob consulta conforme complexidade'
       ],
-      stripePriceId: 'prod_TDTvOnxumW3fLg', // Placeholder Stripe Price ID
+      stripePriceId: 'SEU_STRIPE_PRICE_ID_AQUI_IA', // SUBSTITUA ESTE ID
       color: 'from-amber-600 to-orange-700',
       borderColor: 'border-amber-600'
     }
