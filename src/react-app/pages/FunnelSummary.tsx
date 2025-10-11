@@ -79,7 +79,7 @@ export default function FunnelSummary() {
         'Layout responsivo',
         'Hospedagem e suporte inclusos'
       ],
-      stripePriceId: 'price_123_menu', // Placeholder Stripe Price ID
+      stripePriceId: 'prod_TDTtaYV89cg6xI', // Placeholder Stripe Price ID
       color: 'from-orange-500 to-orange-600',
       borderColor: 'border-orange-500'
     },
