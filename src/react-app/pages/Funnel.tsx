@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import FunnelProgressBar from '@/react-app/components/FunnelProgressBar';
 import { FunnelResponse } from '@/shared/types';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/browserClient'; // Changed import
+import { supabase } from '@/integrations/supabase/browserClient';
 
 // Define the structure for each funnel step
 interface FunnelStep {
@@ -93,12 +93,13 @@ export default function Funnel() {
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null | undefined>(undefined); // Use undefined initially to indicate "not yet checked"
 
-  const currentStep = funnelSteps[currentStepIndex]; // Define currentStep here
+  const currentStep = funnelSteps[currentStepIndex];
 
+  // Effect para obter o ID do usuário e monitorar mudanças de autenticação
   useEffect(() => {
     const getSession = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      setUserId(user?.id || null); // Set to null if no user
+      setUserId(user?.id || null);
     };
     getSession();
 
@@ -111,37 +112,50 @@ export default function Funnel() {
     };
   }, []);
 
+  // Função para salvar ou atualizar a resposta do funil no Supabase
   const saveFunnelResponse = useCallback(async (dataToSave: Record<string, any>, step: number, completed: boolean = false) => {
     try {
       let response;
-      if (funnelId) {
-        // Update existing funnel response
+      let currentFunnelId = funnelId; // Usar o estado atual de funnelId
+
+      // Se não há funnelId no estado e o usuário é anônimo, tentar pegar do localStorage
+      if (!currentFunnelId && !userId) {
+        currentFunnelId = localStorage.getItem('anonymous_funnel_id');
+      }
+
+      if (currentFunnelId) {
+        // Atualizar resposta do funil existente
         const updatePayload = {
-          user_id: userId, // Can be null for anonymous
+          user_id: userId, // Pode ser null para anônimo
           step_data: dataToSave,
           current_step: step,
           completed: completed,
-          updated_at: new Date().toISOString(), // Explicitly set updated_at for updates
+          updated_at: new Date().toISOString(),
         };
         response = await supabase
           .from('funnel_responses')
           .update(updatePayload)
-          .eq('id', funnelId)
+          .eq('id', currentFunnelId)
           .select()
           .single();
       } else {
-        // Insert new funnel response
+        // Inserir nova resposta do funil
         const insertPayload = {
-          user_id: userId, // Can be null for anonymous
+          user_id: userId, // Pode ser null para anônimo
           step_data: dataToSave,
           current_step: step,
           completed: completed,
         };
         response = await supabase
           .from('funnel_responses')
-          .insert(insertPayload) // id is not included, so default will be used
+          .insert(insertPayload)
           .select()
           .single();
+        
+        // Se um novo funil foi criado para um usuário anônimo, salvar o ID no localStorage
+        if (response.data && !userId) {
+          localStorage.setItem('anonymous_funnel_id', response.data.id);
+        }
       }
 
       if (response.error) {
@@ -150,69 +164,87 @@ export default function Funnel() {
         return;
       }
 
-      setFunnelId(response.data.id);
-      // toast.success('Progresso salvo automaticamente!'); // Too many toasts
+      setFunnelId(response.data.id); // Atualizar o estado com o ID do funil (novo ou existente)
     } catch (error) {
       console.error('Autosave failed:', error);
       toast.error('Erro de conexão ao salvar progresso.');
     }
-  }, [funnelId, userId]);
+  }, [funnelId, userId]); // Depende de funnelId e userId
 
-  // Load existing funnel data on component mount or when userId is determined
+  // Effect para carregar dados do funil existente (ou iniciar um novo)
   useEffect(() => {
     const loadFunnelData = async () => {
       setLoading(true);
       try {
-        let funnelResponse: FunnelResponse | null = null;
+        let loadedFunnelResponse: FunnelResponse | null = null;
+        let targetFunnelId: string | null = null;
 
-        // Only try to load user-specific funnel if userId is available
-        if (userId) {
+        if (userId) { // Usuário autenticado
+          // Limpar qualquer ID de funil anônimo do localStorage
+          localStorage.removeItem('anonymous_funnel_id');
           const { data, error } = await supabase
             .from('funnel_responses')
             .select('*')
             .eq('user_id', userId)
             .eq('completed', false)
-            .order('created_at', { ascending: false })
+            .order('updated_at', { ascending: false })
             .limit(1)
             .single();
           if (error && error.code !== 'PGRST116') throw error;
-          funnelResponse = data;
+          loadedFunnelResponse = data;
+        } else { // Usuário anônimo
+          targetFunnelId = localStorage.getItem('anonymous_funnel_id');
+          if (targetFunnelId) {
+            const { data, error } = await supabase
+              .from('funnel_responses')
+              .select('*')
+              .eq('id', targetFunnelId)
+              .eq('completed', false) // Garantir que é um funil incompleto
+              .single();
+            if (error && error.code !== 'PGRST116') {
+              console.warn('ID de funil anônimo encontrado no localStorage, mas não no DB ou já concluído. Iniciando novo funil.', error);
+              localStorage.removeItem('anonymous_funnel_id'); // Limpar ID inválido/concluído
+            } else {
+              loadedFunnelResponse = data;
+            }
+          }
         }
 
-        if (funnelResponse) {
-          setFunnelId(funnelResponse.id!);
-          setFormData(funnelResponse.step_data);
-          setCurrentStepIndex(funnelResponse.current_step);
+        if (loadedFunnelResponse) {
+          setFunnelId(loadedFunnelResponse.id!);
+          setFormData(loadedFunnelResponse.step_data);
+          setCurrentStepIndex(loadedFunnelResponse.current_step);
         } else {
-          // No existing funnel found for authenticated user, or user is anonymous.
-          // Start a new funnel.
+          // Nenhum funil existente encontrado, iniciar um novo
           setFunnelId(null);
           setFormData({});
           setCurrentStepIndex(0);
+          localStorage.removeItem('anonymous_funnel_id'); // Garantir que não há ID anônimo obsoleto
         }
       } catch (error: any) {
-        console.error('Error loading funnel data:', error);
+        console.error('Erro ao carregar dados do funil:', error);
         toast.error(`Erro ao carregar progresso: ${error.message || 'Erro de conexão.'}`);
         setFunnelId(null);
         setFormData({});
         setCurrentStepIndex(0);
+        localStorage.removeItem('anonymous_funnel_id');
       } finally {
-        setLoading(false); // Always set loading to false here
+        setLoading(false);
       }
     };
 
-    // Only run loadFunnelData once userId has been definitively set (either to a string or null)
+    // Executar loadFunnelData apenas quando userId for definido (string ou null)
     if (userId !== undefined) {
       loadFunnelData();
     }
-  }, [funnelId, userId]); // Re-run if funnelId or userId changes
+  }, [userId]); // Depende apenas de userId para o carregamento inicial
 
-  // Autosave on formData or currentStepIndex change
+  // Autosave em mudanças de formData ou currentStepIndex
   useEffect(() => {
     if (!loading) {
       const handler = setTimeout(() => {
         saveFunnelResponse(formData, currentStepIndex);
-      }, 1000); // Save 1 second after user stops typing/changing
+      }, 1000); // Salvar 1 segundo depois que o usuário parar de digitar/mudar
       return () => clearTimeout(handler);
     }
   }, [formData, currentStepIndex, loading, saveFunnelResponse]);
@@ -239,21 +271,26 @@ export default function Funnel() {
     setFormData((prev) => ({ ...prev, [stepId]: value }));
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
+    // Salvar o estado atual antes de prosseguir
+    await saveFunnelResponse(formData, currentStepIndex, currentStepIndex === funnelSteps.length - 1);
+
     if (currentStepIndex < funnelSteps.length - 1) {
       setCurrentStepIndex((prev) => prev + 1);
     } else {
-      // Funnel completed, navigate to summary/plan selection
-      saveFunnelResponse(formData, currentStepIndex, true); // Mark as completed
+      // Funil concluído, navegar para o resumo/seleção de plano
       navigate('/funnel/summary', { state: { formData, funnelId } });
     }
   };
 
-  const handleBack = () => {
+  const handleBack = async () => {
+    // Salvar o estado atual antes de voltar
+    await saveFunnelResponse(formData, currentStepIndex);
+
     if (currentStepIndex > 0) {
       setCurrentStepIndex((prev) => prev - 1);
     } else {
-      navigate('/'); // Go back to home page if on first step
+      navigate('/'); // Voltar para a página inicial se estiver na primeira etapa
     }
   };
 
