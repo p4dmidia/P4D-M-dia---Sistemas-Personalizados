@@ -9,7 +9,6 @@ import profiles from "./routes/profiles";
 import settings from "./routes/settings";
 import analytics from "./routes/analytics";
 import contact from "./routes/contact";
-import stripeRoute from "./routes/stripe"; // Importando a nova rota do Stripe
 import { createWorkerSupabaseClient } from '@/integrations/supabase/workerClient';
 import { SupabaseClient } from '@supabase/supabase-js';
 
@@ -17,7 +16,6 @@ type Bindings = {
   SUPABASE_URL: string;
   SUPABASE_ANON_KEY: string;
   JWT_SECRET: string;
-  STRIPE_SECRET_KEY: string; // Mantendo a chave do Stripe
   SUPABASE_SERVICE_ROLE_KEY: string;
 };
 
@@ -50,7 +48,6 @@ app.route('/api/profiles', profiles);
 app.route('/api/settings', settings);
 app.route('/api/analytics', analytics);
 app.route('/api/contact', contact);
-app.route('/api/stripe', stripeRoute); // Adicionando a nova rota do Stripe
 
 app.get('/', (c) => {
   return c.text('P4D Mídia API is running!');

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Check, Star } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -23,6 +23,7 @@ export default function FunnelSummary() {
   const [recommendedPlan, setRecommendedPlan] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null); // Track user ID
+  const [userEmail, setUserEmail] = useState<string | null>(null); // Track user email
 
   // Helper function to get the label for a given value and step ID
   const getOptionLabel = (stepId: string, value: string): string => {
@@ -48,7 +49,7 @@ export default function FunnelSummary() {
         'Hospedagem inclusa',
         'Suporte via WhatsApp'
       ],
-      stripePriceId: 'SEU_STRIPE_PRICE_ID_AQUI_SITE_INSTITUCIONAL', // SUBSTITUA ESTE ID
+      stripePriceId: 'price_1Pj110Rz2111111111111111', // SUBSTITUA ESTE ID PELO ID REAL DO SEU PRODUTO/PREÇO NO STRIPE
       color: 'from-blue-500 to-blue-600',
       borderColor: 'border-blue-500'
     },
@@ -63,7 +64,7 @@ export default function FunnelSummary() {
         'Otimização para conversão e tráfego pago',
         'Hospedagem e suporte inclusos'
       ],
-      stripePriceId: 'SEU_STRIPE_PRICE_ID_AQUI_ECOMMERCE', // SUBSTITUA ESTE ID
+      stripePriceId: 'price_1Pj110Rz2222222222222222', // SUBSTITUA ESTE ID PELO ID REAL DO SEU PRODUTO/PREÇO NO STRIPE
       color: 'from-green-500 to-green-600',
       borderColor: 'border-green-500'
     },
@@ -79,7 +80,7 @@ export default function FunnelSummary() {
         'Layout responsivo',
         'Hospedagem e suporte inclusos'
       ],
-      stripePriceId: 'SEU_STRIPE_PRICE_ID_AQUI_CARDAPIO_DIGITAL', // SUBSTITUA ESTE ID
+      stripePriceId: 'price_1Pj110Rz3333333333333333', // SUBSTITUA ESTE ID PELO ID REAL DO SEU PRODUTO/PREÇO NO STRIPE
       color: 'from-orange-500 to-orange-600',
       borderColor: 'border-orange-500'
     },
@@ -95,7 +96,7 @@ export default function FunnelSummary() {
         'Sistema de pontos e fidelidade por CPF',
         'Hospedagem e suporte inclusos'
       ],
-      stripePriceId: 'SEU_STRIPE_PRICE_ID_AQUI_AFILIADOS', // SUBSTITUA ESTE ID
+      stripePriceId: 'price_1Pj110Rz4444444444444444', // SUBSTITUA ESTE ID PELO ID REAL DO SEU PRODUTO/PREÇO NO STRIPE
       color: 'from-purple-500 to-purple-600',
       borderColor: 'border-purple-500'
     },
@@ -110,7 +111,7 @@ export default function FunnelSummary() {
         'Módulo de cashback personalizável',
         'Hospedagem e suporte técnico'
       ],
-      stripePriceId: 'SEU_STRIPE_PRICE_ID_AQUI_CRM', // SUBSTITUA ESTE ID
+      stripePriceId: 'price_1Pj110Rz5555555555555555', // SUBSTITUA ESTE ID PELO ID REAL DO SEU PRODUTO/PREÇO NO STRIPE
       color: 'from-red-500 to-red-600',
       borderColor: 'border-red-500'
     },
@@ -127,7 +128,7 @@ export default function FunnelSummary() {
         'Hospedagem e suporte premium',
         'Preço sob consulta conforme complexidade'
       ],
-      stripePriceId: 'SEU_STRIPE_PRICE_ID_AQUI_IA', // SUBSTITUA ESTE ID
+      stripePriceId: 'price_1Pj110Rz6666666666666666', // SUBSTITUA ESTE ID PELO ID REAL DO SEU PRODUTO/PREÇO NO STRIPE
       color: 'from-amber-600 to-orange-700',
       borderColor: 'border-amber-600'
     }
@@ -143,12 +144,14 @@ export default function FunnelSummary() {
         return;
       }
       setUserId(user.id);
+      setUserEmail(user.email);
     };
     checkAuthAndSetUser();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         setUserId(session.user.id);
+        setUserEmail(session.user.email);
       } else {
         toast.error('Sua sessão expirou. Por favor, faça login novamente.');
         navigate('/login');
@@ -263,28 +266,30 @@ export default function FunnelSummary() {
   }, [formData, loading]); // Depend on formData and loading
 
   const handleSelectPlan = async (plan: typeof plans[0]) => {
+    if (!userId || !userEmail) {
+      toast.error('Usuário não autenticado. Por favor, faça login.', { id: 'stripe-checkout' });
+      navigate('/login');
+      return;
+    }
+
     setLoading(true);
     toast.loading('Preparando seu checkout Stripe...', { id: 'stripe-checkout' });
 
     try {
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError || !session || !session.access_token) {
-        toast.error('Sua sessão expirou ou não está ativa. Por favor, faça login novamente.', { id: 'stripe-checkout' });
-        navigate('/login');
-        return;
-      }
-
-      const response = await fetch('/api/stripe/create-checkout-session', {
+      // Chamar a Supabase Edge Function para criar a sessão de checkout
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout-session`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
+          // Não é necessário Authorization header aqui, pois a função Edge lida com a autenticação internamente
         },
         body: JSON.stringify({
-          plan_name: plan.name,
-          stripe_price_id: plan.stripePriceId,
-          funnel_response_id: funnelId, // Pass funnelId if available
+          userId: userId,
+          email: userEmail,
+          priceId: plan.stripePriceId,
+          planName: plan.name,
+          amount: plan.amount,
+          funnelResponseId: funnelId,
         }),
       });
 
@@ -296,11 +301,11 @@ export default function FunnelSummary() {
         return;
       }
 
-      const { checkoutUrl } = await response.json();
+      const { url } = await response.json();
       toast.success('Redirecionando para o pagamento...', { id: 'stripe-checkout' });
       
       // Redirect to Stripe checkout page
-      window.location.href = checkoutUrl;
+      window.location.href = url;
 
     } catch (error) {
       console.error('Frontend: Error during Stripe checkout session creation:', error);

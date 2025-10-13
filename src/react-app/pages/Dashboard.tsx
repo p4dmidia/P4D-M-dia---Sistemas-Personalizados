@@ -183,29 +183,24 @@ export default function Dashboard() {
   };
 
   const handleManagePayment = async () => {
-    if (!userProfile?.stripe_customer_id) {
-      toast.error('ID de cliente Stripe não encontrado. Por favor, entre em contato com o suporte.');
+    if (!userProfile?.stripe_customer_id || !userProfile?.email || !userProfile?.first_name) {
+      toast.error('Dados do cliente Stripe não encontrados. Por favor, entre em contato com o suporte.', { id: 'stripePortal' });
       return;
     }
 
+    setLoading(true);
     toast.loading('Redirecionando para o portal do cliente Stripe...', { id: 'stripePortal' });
     try {
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !session || !session.access_token) {
-        toast.error('Sua sessão expirou. Por favor, faça login novamente.', { id: 'stripePortal' });
-        navigate('/login');
-        return;
-      }
-
-      // Chamar uma nova rota no worker para criar uma sessão do portal do cliente Stripe
-      const response = await fetch('/api/stripe/create-customer-portal-session', {
+      // Chamar a Supabase Edge Function para criar uma sessão do portal do cliente Stripe
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-portal-session`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
+          // Não é necessário Authorization header aqui, a função Edge lida com a autenticação
         },
         body: JSON.stringify({
-          customer_id: userProfile.stripe_customer_id,
+          customerId: userProfile.stripe_customer_id,
+          userId: userProfile.id, // Passar userId para verificação na Edge Function
           return_url: window.location.href, // Retorna para o dashboard após gerenciar
         }),
       });
@@ -215,13 +210,15 @@ export default function Dashboard() {
         throw new Error(errorData.error || 'Falha ao criar sessão do portal do cliente Stripe.');
       }
 
-      const { portalUrl } = await response.json();
+      const { url } = await response.json();
       toast.success('Redirecionando...', { id: 'stripePortal' });
-      window.location.href = portalUrl;
+      window.location.href = url;
 
     } catch (error: any) {
       console.error('Erro ao gerenciar pagamento Stripe:', error);
       toast.error(error.message || 'Erro ao gerenciar pagamento. Tente novamente.', { id: 'stripePortal' });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -236,41 +233,22 @@ export default function Dashboard() {
   };
 
   const handleCancelSubscription = async () => {
-    if (!selectedSubscriptionIdForCancellation || !currentSubscription?.stripe_subscription_id) return;
+    if (!selectedSubscriptionIdForCancellation || !currentSubscription?.stripe_subscription_id) {
+      toast.error('Assinatura não encontrada para cancelamento.', { id: 'cancelToast' });
+      return;
+    }
 
     setLoading(true);
     setShowCancelConfirmation(false);
     toast.loading('Cancelando assinatura...', { id: 'cancelToast' });
 
     try {
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !session || !session.access_token) {
-        toast.error('Sua sessão expirou. Por favor, faça login novamente.', { id: 'cancelToast' });
-        navigate('/login');
-        return;
-      }
-
-      // Chamar uma nova rota no worker para cancelar a assinatura Stripe
-      const response = await fetch('/api/stripe/cancel-subscription', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          stripe_subscription_id: currentSubscription.stripe_subscription_id,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Falha ao cancelar assinatura.');
-      }
-
-      toast.success('Assinatura cancelada com sucesso! O status será atualizado em breve.', { id: 'cancelToast' });
-      // O webhook do Stripe irá atualizar o status no Supabase, então não precisamos chamar fetchDashboardData imediatamente.
-      // Apenas atualizamos o estado local para refletir a intenção.
-      setSubscriptions(prev => prev.map(sub => sub.id === selectedSubscriptionIdForCancellation ? { ...sub, status: 'canceled' } : sub));
+      // Não há uma função Edge específica para cancelar, o portal do cliente Stripe é a forma preferida.
+      // Se o usuário cancelar pelo portal, o webhook 'customer.subscription.deleted' irá atualizar o DB.
+      // Para um cancelamento direto via API, precisaríamos de uma Edge Function dedicada.
+      // Por enquanto, vamos redirecionar para o portal para que o usuário cancele por lá.
+      await handleManagePayment(); // Redireciona para o portal onde o usuário pode cancelar
+      toast.success('Redirecionando para o portal do cliente para gerenciar sua assinatura.', { id: 'cancelToast' });
 
     } catch (error: any) {
       console.error('Erro ao cancelar assinatura:', error);

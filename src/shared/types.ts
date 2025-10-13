@@ -56,8 +56,8 @@ export type Project = z.infer<typeof ProjectSchema>;
 export const SubscriptionSchema = z.object({
   id: z.string().uuid().optional(),
   user_id: z.string().uuid(),
-  stripe_subscription_id: z.string().optional(), // Mantido Stripe
-  stripe_price_id: z.string().optional(), // Mantido Stripe
+  stripe_subscription_id: z.string().nullable().optional(), // Pode ser null inicialmente
+  stripe_price_id: z.string(), // Alterado para stripe_price_id, não nullable
   plan_name: z.string(),
   amount: z.number(),
   status: z.string().default('pending'),

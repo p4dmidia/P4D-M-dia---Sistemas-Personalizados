@@ -1,5 +1,0 @@
-{
-  "imports": {
-    "stripe": "https://esm.sh/stripe@19.1.0"
-  }
-}
