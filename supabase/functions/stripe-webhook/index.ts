@@ -61,25 +61,54 @@ Deno.serve(async (req) => {
         const price = event.data.object as Stripe.Price;
         console.log(`Processing price event: ${event.type} for price ${price.id}`);
 
-        // Fetch the product's internal UUID from our DB using its Stripe ID
-        const { data: productData, error: productError } = await supabaseAdmin
+        // Garante que o produto associado exista no nosso DB primeiro
+        let productData;
+        const { data: existingProduct, error: fetchProductError } = await supabaseAdmin
           .from('products')
           .select('id')
           .eq('stripe_product_id', price.product as string)
           .single();
 
-        if (productError || !productData) {
-          console.error(`Error finding internal product ID for Stripe product ${price.product}:`, productError);
-          return new Response(`Failed to find associated product for price ${price.id}`, { status: 500 });
+        if (fetchProductError && fetchProductError.code !== 'PGRST116') {
+          console.error(`Error checking for existing product ${price.product}:`, fetchProductError);
+          return new Response(`Failed to check for existing product for price ${price.id}`, { status: 500 });
         }
 
-        const { error: upsertError } = await supabaseAdmin
+        if (!existingProduct) {
+          console.log(`Product ${price.product} not found in DB, fetching from Stripe and upserting.`);
+          const stripeProduct = await stripe.products.retrieve(price.product as string);
+          const { data: newProductData, error: upsertProductError } = await supabaseAdmin
+            .from('products')
+            .upsert({
+              stripe_product_id: stripeProduct.id,
+              name: stripeProduct.name,
+              description: stripeProduct.description,
+              active: stripeProduct.active,
+              metadata: stripeProduct.metadata,
+              updated_at: new Date().toISOString(),
+            }, { onConflict: 'stripe_product_id' })
+            .select('id')
+            .single();
+
+          if (upsertProductError || !newProductData) {
+            console.error(`Error upserting product ${stripeProduct.id} during price processing:`, upsertProductError);
+            return new Response(`Failed to upsert product for price ${price.id}`, { status: 500 });
+          }
+          productData = newProductData;
+          console.log(`Product ${stripeProduct.id} upserted successfully during price processing.`);
+        } else {
+          productData = existingProduct;
+          console.log(`Product ${price.product} already exists in DB.`);
+        }
+
+        // Agora que temos o productData.id, podemos prosseguir com o upsert do preço
+        const { error: upsertPriceError } = await supabaseAdmin
           .from('prices')
           .upsert({
             stripe_price_id: price.id,
-            product_id: productData.id, // Use the internal UUID
+            product_id: productData.id, // Usa o UUID interno
             active: price.active,
-            unit_amount: price.unit_amount ? price.unit_amount / 100 : 0, // Convert cents to dollars
+            unit_amount: price.unit_amount ? price.unit_amount / 100 : 0, // Converte centavos para reais
             currency: price.currency,
             type: price.type,
             interval: price.recurring?.interval || null,
@@ -88,9 +117,9 @@ Deno.serve(async (req) => {
             updated_at: new Date().toISOString(),
           }, { onConflict: 'stripe_price_id' });
 
-        if (upsertError) {
-          console.error(`Error upserting price ${price.id}:`, upsertError);
-          return new Response(`Failed to upsert price: ${upsertError.message}`, { status: 500 });
+        if (upsertPriceError) {
+          console.error(`Error upserting price ${price.id}:`, upsertPriceError);
+          return new Response(`Failed to upsert price: ${upsertPriceError.message}`, { status: 500 });
         }
         console.log(`Price ${price.id} upserted successfully.`);
         break;
@@ -133,7 +162,7 @@ Deno.serve(async (req) => {
             stripe_subscription_id: subscriptionId,
             stripe_price_id: price.id,
             plan_name: product.name,
-            amount: price.unit_amount ? price.unit_amount / 100 : 0, // Convert cents to dollars
+            amount: price.unit_amount ? price.unit_amount / 100 : 0, // Converte centavos para reais
             status: stripeSubscription.status,
             next_due_date: stripeSubscription.current_period_end ? new Date(stripeSubscription.current_period_end * 1000).toISOString() : null,
             updated_at: new Date().toISOString(),
@@ -172,7 +201,7 @@ Deno.serve(async (req) => {
                 plan_name: planName,
                 status: 'briefing_received',
                 summary: projectSummary,
-                estimated_delivery: '7 dias úteis', // Default estimate
+                estimated_delivery: '7 dias úteis', // Estimativa padrão
               })
               .select()
               .single();
