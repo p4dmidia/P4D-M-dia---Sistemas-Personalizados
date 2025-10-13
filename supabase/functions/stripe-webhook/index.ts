@@ -23,7 +23,6 @@ Deno.serve(async (req) => {
 
   let event: Stripe.Event;
   try {
-    // ALTERAÇÃO AQUI: Usando constructEventAsync e await
     event = await stripe.webhooks.constructEventAsync(payload, sig, STRIPE_WEBHOOK_SECRET);
   } catch (err: any) {
     console.error("Webhook signature verification failed:", err.message);
@@ -32,6 +31,71 @@ Deno.serve(async (req) => {
 
   try {
     switch (event.type) {
+      case "product.created":
+      case "product.updated": {
+        const product = event.data.object as Stripe.Product;
+        console.log(`Processing product event: ${event.type} for product ${product.id}`);
+
+        const { error: upsertError } = await supabaseAdmin
+          .from('products')
+          .upsert({
+            stripe_product_id: product.id,
+            name: product.name,
+            description: product.description,
+            active: product.active,
+            metadata: product.metadata,
+            updated_at: new Date().toISOString(),
+            // created_at will be set by default on insert, or remain unchanged on update
+          }, { onConflict: 'stripe_product_id' });
+
+        if (upsertError) {
+          console.error(`Error upserting product ${product.id}:`, upsertError);
+          return new Response(`Failed to upsert product: ${upsertError.message}`, { status: 500 });
+        }
+        console.log(`Product ${product.id} (${product.name}) upserted successfully.`);
+        break;
+      }
+
+      case "price.created":
+      case "price.updated": {
+        const price = event.data.object as Stripe.Price;
+        console.log(`Processing price event: ${event.type} for price ${price.id}`);
+
+        // Fetch the product's internal UUID from our DB using its Stripe ID
+        const { data: productData, error: productError } = await supabaseAdmin
+          .from('products')
+          .select('id')
+          .eq('stripe_product_id', price.product as string)
+          .single();
+
+        if (productError || !productData) {
+          console.error(`Error finding internal product ID for Stripe product ${price.product}:`, productError);
+          return new Response(`Failed to find associated product for price ${price.id}`, { status: 500 });
+        }
+
+        const { error: upsertError } = await supabaseAdmin
+          .from('prices')
+          .upsert({
+            stripe_price_id: price.id,
+            product_id: productData.id, // Use the internal UUID
+            active: price.active,
+            unit_amount: price.unit_amount ? price.unit_amount / 100 : 0, // Convert cents to dollars
+            currency: price.currency,
+            type: price.type,
+            interval: price.recurring?.interval || null,
+            interval_count: price.recurring?.interval_count || null,
+            metadata: price.metadata,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'stripe_price_id' });
+
+        if (upsertError) {
+          console.error(`Error upserting price ${price.id}:`, upsertError);
+          return new Response(`Failed to upsert price: ${upsertError.message}`, { status: 500 });
+        }
+        console.log(`Price ${price.id} upserted successfully.`);
+        break;
+      }
+
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
         const customerId = session.customer as string;
