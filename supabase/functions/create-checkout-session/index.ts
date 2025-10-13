@@ -3,6 +3,12 @@
 import Stripe from "npm:stripe@^16";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
+// Definir os cabeçalhos CORS
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*', // Permite qualquer origem. Em produção, você pode querer restringir a domínios específicos.
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
 type Body = {
   userId: string;        // id do usuário (profiles.id)
   email: string;         // e-mail do usuário
@@ -13,7 +19,12 @@ type Body = {
 };
 
 Deno.serve(async (req) => {
-  if (req.method !== "POST") return new Response("Method Not Allowed", { status: 405 });
+  // Lidar com requisições OPTIONS (preflight)
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
+  if (req.method !== "POST") return new Response("Method Not Allowed", { status: 405, headers: corsHeaders });
 
   const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY");
   const FRONTEND_URL = Deno.env.get("FRONTEND_URL");
@@ -22,7 +33,7 @@ Deno.serve(async (req) => {
 
   if (!STRIPE_SECRET_KEY || !FRONTEND_URL || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     console.error("Server misconfigured: Missing environment variables.");
-    return new Response("Server misconfigured (missing STRIPE_SECRET_KEY/FRONTEND_URL/SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY).", { status: 500 });
+    return new Response("Server misconfigured (missing STRIPE_SECRET_KEY/FRONTEND_URL/SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY).", { status: 500, headers: corsHeaders });
   }
 
   const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -30,7 +41,7 @@ Deno.serve(async (req) => {
 
   try {
     const { userId, email, priceId, planName, amount, funnelResponseId } = (await req.json()) as Body;
-    if (!userId || !email || !priceId || !planName || amount === undefined) return new Response("Invalid body.", { status: 400 });
+    if (!userId || !email || !priceId || !planName || amount === undefined) return new Response("Invalid body.", { status: 400, headers: corsHeaders });
 
     // 1. Obter ou Criar Stripe Customer
     let stripeCustomerId: string | null = null;
@@ -42,7 +53,7 @@ Deno.serve(async (req) => {
 
     if (profileError && profileError.code !== 'PGRST116') { // PGRST116 = no rows found
       console.error("Error fetching profile for Stripe customer ID:", profileError);
-      return new Response("Failed to fetch user profile.", { status: 500 });
+      return new Response("Failed to fetch user profile.", { status: 500, headers: corsHeaders });
     }
 
     if (profileData?.stripe_customer_id) {
@@ -82,7 +93,7 @@ Deno.serve(async (req) => {
 
     if (dbInsertError) {
       console.error('Error saving pending subscription to DB:', dbInsertError);
-      return new Response('Failed to save pending subscription details.', { status: 500 });
+      return new Response('Failed to save pending subscription details.', { status: 500, headers: corsHeaders });
     }
     console.log('Pending subscription saved to Supabase:', newSubscription.id);
 
@@ -108,10 +119,10 @@ Deno.serve(async (req) => {
     });
 
     return new Response(JSON.stringify({ url: session.url }), {
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+      headers: { "Content-Type": "application/json", ...corsHeaders }
     });
   } catch (err) {
     console.error("create-checkout-session error:", err);
-    return new Response("Failed to create checkout session.", { status: 500 });
+    return new Response("Failed to create checkout session.", { status: 500, headers: corsHeaders });
   }
 });
