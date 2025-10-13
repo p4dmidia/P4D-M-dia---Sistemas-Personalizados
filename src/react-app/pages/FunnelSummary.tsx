@@ -2,11 +2,35 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Check, Star } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { supabase } from '@/integrations/supabase/browserClient'; // Import supabase client
-import { FunnelResponse } from '@/shared/types'; // Import FunnelResponse type
-import { funnelSteps } from '@/react-app/pages/Funnel'; // Import funnelSteps from Funnel.tsx
+import { supabase } from '@/integrations/supabase/browserClient';
+import { FunnelResponse } from '@/shared/types';
+import { funnelSteps } from '@/react-app/pages/Funnel';
+import { Check, Star } from 'lucide-react';
+
+// Definir tipos para os dados do Stripe que serão buscados
+interface StripeProduct {
+  id: string; // UUID interno do Supabase
+  stripe_product_id: string;
+  name: string;
+  description: string | null;
+  active: boolean;
+  metadata: Record<string, any> | null;
+  prices: StripePrice[]; // Relação com os preços
+}
+
+interface StripePrice {
+  id: string; // UUID interno do Supabase
+  stripe_price_id: string;
+  product_id: string; // UUID interno do produto
+  active: boolean;
+  unit_amount: number; // Já em reais
+  currency: string;
+  type: string;
+  interval: string | null;
+  interval_count: number | null;
+  metadata: Record<string, any> | null;
+}
 
 interface FunnelSummaryState {
   formData: Record<string, any>;
@@ -16,123 +40,24 @@ interface FunnelSummaryState {
 export default function FunnelSummary() {
   const navigate = useNavigate();
   const location = useLocation();
-  // Initialize with state if available, otherwise empty object/null
   const [formData, setFormData] = useState<Record<string, any>>(location.state?.formData || {});
   const [funnelId, setFunnelId] = useState<string | null>(location.state?.funnelId || null);
   const [summaryText, setSummaryText] = useState<string>('Gerando resumo do seu projeto...');
   const [recommendedPlan, setRecommendedPlan] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [userId, setUserId] = useState<string | null>(null); // Track user ID
-  const [userEmail, setUserEmail] = useState<string | null>(null); // Track user email
+  const [userId, setUserId] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [availablePlans, setAvailablePlans] = useState<StripeProduct[]>([]); // Estado para armazenar os planos do Supabase
 
   // Helper function to get the label for a given value and step ID
   const getOptionLabel = (stepId: string, value: string): string => {
     const step = funnelSteps.find(s => s.id === stepId);
     if (step && step.options) {
       const option = step.options.find(o => o.value === value);
-      return option ? option.label : value; // Return label if found, otherwise the raw value
+      return option ? option.label : value;
     }
     return value;
   };
-
-  // Placeholder for plans (should ideally come from an API)
-  const plans = [
-    {
-      name: '🟦 Site Institucional',
-      price: 'R$ 29,90',
-      amount: 29.90,
-      description: 'Perfeito para empresas e profissionais que desejam uma presença digital moderna e profissional',
-      features: [
-        'Página institucional completa (Home, Sobre, Serviços e Contato)',
-        'Layout responsivo (desktop, tablet e celular)',
-        'Integração com WhatsApp e formulário de contato',
-        'Hospedagem inclusa',
-        'Suporte via WhatsApp'
-      ],
-      stripePriceId: 'price_1Pj110Rz2111111111111111', // SUBSTITUA ESTE ID PELO ID REAL DO SEU PRODUTO/PREÇO NO STRIPE
-      color: 'from-blue-500 to-blue-600',
-      borderColor: 'border-blue-500'
-    },
-    {
-      name: '🟩 E-commerce ou Landing Page de Alta Conversão',
-      price: 'R$ 49,90',
-      amount: 49.90,
-      description: 'Feito para quem quer vender online ou gerar leads todos os dias',
-      features: [
-        'Loja virtual ou landing page personalizada',
-        'Integração com meios de pagamento',
-        'Otimização para conversão e tráfego pago',
-        'Hospedagem e suporte inclusos'
-      ],
-      stripePriceId: 'price_1Pj110Rz2222222222222222', // SUBSTITUA ESTE ID PELO ID REAL DO SEU PRODUTO/PREÇO NO STRIPE
-      color: 'from-green-500 to-green-600',
-      borderColor: 'border-green-500'
-    },
-    {
-      name: '🟧 Cardápio Digital para Delivery',
-      price: 'R$ 79,90',
-      amount: 79.90,
-      description: 'Ideal para restaurantes e lanchonetes que querem digitalizar o atendimento',
-      features: [
-        'Cardápio digital interativo com fotos e preços',
-        'Link direto para pedidos via WhatsApp',
-        'Painel para editar produtos',
-        'Layout responsivo',
-        'Hospedagem e suporte inclusos'
-      ],
-      stripePriceId: 'price_1Pj110Rz3333333333333333', // SUBSTITUA ESTE ID PELO ID REAL DO SEU PRODUTO/PREÇO NO STRIPE
-      color: 'from-orange-500 to-orange-600',
-      borderColor: 'border-orange-500'
-    },
-    {
-      name: '🟪 E-commerce com Afiliados / Clube de Assinatura / Pontuação por CPF',
-      price: 'R$ 119,90',
-      amount: 119.90,
-      description: 'Transforme seu negócio em um sistema de vendas completo',
-      features: [
-        'Loja virtual personalizada',
-        'Área de afiliados e controle de comissões',
-        'Clube de assinatura',
-        'Sistema de pontos e fidelidade por CPF',
-        'Hospedagem e suporte inclusos'
-      ],
-      stripePriceId: 'price_1Pj110Rz4444444444444444', // SUBSTITUA ESTE ID PELO ID REAL DO SEU PRODUTO/PREÇO NO STRIPE
-      color: 'from-purple-500 to-purple-600',
-      borderColor: 'border-purple-500'
-    },
-    {
-      name: '🟥 CRM, Sistemas Internos e Cashback',
-      price: 'R$ 149,90',
-      amount: 149.90,
-      description: 'Controle total do seu negócio em um único painel',
-      features: [
-        'CRM com gestão de clientes e pipeline',
-        'Controle interno e financeiro',
-        'Módulo de cashback personalizável',
-        'Hospedagem e suporte técnico'
-      ],
-      stripePriceId: 'price_1Pj110Rz5555555555555555', // SUBSTITUA ESTE ID PELO ID REAL DO SEU PRODUTO/PREÇO NO STRIPE
-      color: 'from-red-500 to-red-600',
-      borderColor: 'border-red-500'
-    },
-    {
-      name: '🟫 Sistemas com Inteligência Artificial',
-      price: 'A partir de R$ 199,90',
-      amount: 199.90,
-      description: 'A era da IA chegou, e sua empresa pode estar à frente',
-      features: [
-        'Chatbots e agentes inteligentes (LLM)',
-        'Marketplaces personalizados',
-        'Áreas de membros e dashboards inteligentes',
-        'Desenvolvimento sob medida',
-        'Hospedagem e suporte premium',
-        'Preço sob consulta conforme complexidade'
-      ],
-      stripePriceId: 'price_1Pj110Rz6666666666666666', // SUBSTITUA ESTE ID PELO ID REAL DO SEU PRODUTO/PREÇO NO STRIPE
-      color: 'from-amber-600 to-orange-700',
-      borderColor: 'border-amber-600'
-    }
-  ];
 
   // Effect to get user ID and redirect if not authenticated
   useEffect(() => {
@@ -163,53 +88,75 @@ export default function FunnelSummary() {
     };
   }, [navigate]);
 
-  // Effect to load funnel data if not from location.state
+  // Effect to load funnel data if not from location.state AND fetch plans from Supabase
   useEffect(() => {
-    const loadExistingFunnel = async () => {
-      // Only attempt to load if userId is known and no funnel data is present from location.state
-      // and if formData is still empty (meaning it wasn't passed via state)
-      if (userId && Object.keys(formData).length === 0) {
-        setLoading(true);
-        try {
-          const { data: funnelResponse, error } = await supabase
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        // 1. Load existing funnel data if needed
+        if (userId && Object.keys(formData).length === 0) {
+          const { data: funnelResponse, error: funnelError } = await supabase
             .from('funnel_responses')
             .select('*')
             .eq('user_id', userId)
-            .eq('completed', false) // Look for incomplete funnels
+            .eq('completed', false)
             .order('updated_at', { ascending: false })
             .limit(1)
             .single();
 
-          if (error && error.code !== 'PGRST116') { // PGRST116 means "no rows found"
-            console.error('Error loading existing funnel for user:', error);
+          if (funnelError && funnelError.code !== 'PGRST116') {
+            console.error('Error loading existing funnel for user:', funnelError);
             toast.error('Erro ao carregar seu progresso anterior.');
           } else if (funnelResponse) {
             setFunnelId(funnelResponse.id!);
             setFormData(funnelResponse.step_data);
           }
-        } catch (err) {
-          console.error('Unexpected error loading funnel:', err);
-          toast.error('Erro inesperado ao carregar progresso.');
-        } finally {
-          setLoading(false);
         }
-      } else if (!userId && Object.keys(formData).length === 0) {
-        // If no user and no funnel data from state, proceed to show plans with generic summary
+
+        // 2. Fetch active products and their prices from Supabase
+        const { data: productsWithPrices, error: fetchError } = await supabase
+          .from('products')
+          .select('*, prices(*)')
+          .eq('active', true)
+          .order('created_at', { ascending: true }); // Order by creation date for consistent display
+
+        if (fetchError) {
+          console.error('Error fetching products and prices:', fetchError);
+          toast.error('Erro ao carregar os planos disponíveis.');
+          setAvailablePlans([]);
+        } else {
+          // Filter out products without active prices or with multiple prices (for simplicity, take the first active)
+          const formattedPlans = productsWithPrices
+            .map(product => {
+              const activePrice = product.prices.find(price => price.active);
+              if (activePrice) {
+                return {
+                  ...product,
+                  price_details: activePrice, // Attach the active price details
+                };
+              }
+              return null;
+            })
+            .filter(Boolean) as (StripeProduct & { price_details: StripePrice })[];
+          
+          setAvailablePlans(formattedPlans);
+        }
+      } catch (err) {
+        console.error('Unexpected error loading data:', err);
+        toast.error('Erro inesperado ao carregar dados.');
+      } finally {
         setLoading(false);
-      } else {
-        // If formData is already present from state, or userId is null and formData is not empty, stop loading
-        setLoading(false); 
       }
     };
 
-    if (userId !== null) { // Only run once userId is determined (not null, not undefined)
-      loadExistingFunnel();
+    if (userId !== null) {
+      loadData();
     }
-  }, [userId]); // Depend only on userId to trigger loading of existing funnel data
+  }, [userId]);
 
-  // Effect to generate summary and recommend plan
+  // Effect to generate summary and recommend plan (now using availablePlans)
   useEffect(() => {
-    if (!loading) { // Only generate summary once loading is complete
+    if (!loading && availablePlans.length > 0) {
       const generateSummaryAndRecommendPlan = () => {
         const businessTypeRaw = formData.business_type;
         const businessType = businessTypeRaw ? getOptionLabel('business_type', businessTypeRaw) : 'seu negócio';
@@ -234,8 +181,7 @@ export default function FunnelSummary() {
         }
         if (additionalNotes) {
           generatedSummary += ` Observações adicionais: ${additionalNotes}.`;
-        }
-        generatedSummary += ` Entrega estimada em até 7 dias úteis (pode variar conforme complexidade).`;
+        Summary += ` Entrega estimada em até 7 dias úteis (pode variar conforme complexidade).`;
         generatedSummary += ` Seu sistema virá hospedado, otimizado e com suporte direto via WhatsApp.`;
 
         // If formData is empty, provide a more generic summary
@@ -245,27 +191,34 @@ export default function FunnelSummary() {
 
         setSummaryText(generatedSummary);
 
-        let recommended = plans[0]; // Default to Site Institucional
-        // Logic for plan recommendation based on translated features
+        // Logic for plan recommendation based on translated features and availablePlans
+        let recommended = availablePlans[0]; // Default to the first available plan
+        
+        // Example recommendation logic (adjust as needed)
         if (desiredFeaturesRaw.includes('e-commerce') || businessTypeRaw === 'e-commerce') {
-          recommended = plans[1];
+          const ecommercePlan = availablePlans.find(p => p.name.includes('E-commerce'));
+          if (ecommercePlan) recommended = ecommercePlan;
         } else if (businessTypeRaw === 'restaurant') {
-          recommended = plans[2];
+          const restaurantPlan = availablePlans.find(p => p.name.includes('Cardápio Digital'));
+          if (restaurantPlan) recommended = restaurantPlan;
         } else if (desiredFeaturesRaw.includes('affiliate_system') || desiredFeaturesRaw.includes('subscription_club') || desiredFeaturesRaw.includes('loyalty_program')) {
-          recommended = plans[3];
-        } else if (desiredFeaturesRaw.includes('crm_features') || desiredFeaturesRaw.includes('internal_systems')) { // Assuming 'internal_systems' is a possible raw value
-          recommended = plans[4];
+          const affiliatePlan = availablePlans.find(p => p.name.includes('Afiliados'));
+          if (affiliatePlan) recommended = affiliatePlan;
+        } else if (desiredFeaturesRaw.includes('crm_features') || desiredFeaturesRaw.includes('internal_systems')) {
+          const crmPlan = availablePlans.find(p => p.name.includes('CRM'));
+          if (crmPlan) recommended = crmPlan;
         } else if (desiredFeaturesRaw.includes('ai_integration')) {
-          recommended = plans[5];
+          const aiPlan = availablePlans.find(p => p.name.includes('Inteligência Artificial'));
+          if (aiPlan) recommended = aiPlan;
         }
-        setRecommendedPlan(recommended.name);
+        setRecommendedPlan(recommended?.name || null);
       };
 
       generateSummaryAndRecommendPlan();
     }
-  }, [formData, loading]); // Depend on formData and loading
+  }, [formData, loading, availablePlans]);
 
-  const handleSelectPlan = async (plan: typeof plans[0]) => {
+  const handleSelectPlan = async (plan: StripeProduct & { price_details: StripePrice }) => {
     if (!userId || !userEmail) {
       toast.error('Usuário não autenticado. Por favor, faça login.', { id: 'stripe-checkout' });
       navigate('/login');
@@ -276,19 +229,17 @@ export default function FunnelSummary() {
     toast.loading('Preparando seu checkout Stripe...', { id: 'stripe-checkout' });
 
     try {
-      // Chamar a Supabase Edge Function para criar a sessão de checkout
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout-session`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // Não é necessário Authorization header aqui, pois a função Edge lida com a autenticação internamente
         },
         body: JSON.stringify({
           userId: userId,
           email: userEmail,
-          priceId: plan.stripePriceId,
+          priceId: plan.price_details.stripe_price_id, // Usar o ID do preço do Stripe
           planName: plan.name,
-          amount: plan.amount,
+          amount: plan.price_details.unit_amount, // Usar o valor do preço
           funnelResponseId: funnelId,
         }),
       });
@@ -304,7 +255,6 @@ export default function FunnelSummary() {
       const { url } = await response.json();
       toast.success('Redirecionando para o pagamento...', { id: 'stripe-checkout' });
       
-      // Redirect to Stripe checkout page
       window.location.href = url;
 
     } catch (error) {
@@ -358,54 +308,59 @@ export default function FunnelSummary() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
-          {plans.map((plan, index) => (
-            <div
-              key={index}
-              className={`relative bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm border-2 ${plan.borderColor} rounded-2xl p-8 transition-all duration-300 transform hover:scale-105 ${
-                plan.name === recommendedPlan ? 'lg:scale-105 shadow-2xl shadow-blue-500/20' : 'hover:shadow-xl'
-              }`}
-            >
-              {plan.name === recommendedPlan && (
-                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                  <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-1">
-                    <Star className="w-4 h-4" />
-                    Recomendado para você
-                  </div>
-                </div>
-              )}
-
-              <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
-                <p className="text-gray-400 mb-4">{plan.description}</p>
-                <div className="mb-4">
-                  <span className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                    {plan.price}
-                  </span>
-                  <span className="text-gray-400 text-lg">/mês</span>
-                </div>
-              </div>
-
-              <div className="space-y-4 mb-8">
-                {plan.features.map((feature, featureIndex) => (
-                  <div key={featureIndex} className="flex items-center gap-3">
-                    <div className={`flex-shrink-0 w-5 h-5 bg-gradient-to-r ${plan.color} rounded-full flex items-center justify-center`}>
-                      <Check className="w-3 h-3 text-white" />
-                    </div>
-                    <span className="text-gray-300">{feature}</span>
-                  </div>
-                ))}
-              </div>
-
-              <button
-                onClick={() => handleSelectPlan(plan)}
-                className={`w-full bg-gradient-to-r ${plan.color} hover:opacity-90 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 ${
-                  plan.name === recommendedPlan ? 'shadow-lg hover:shadow-blue-500/25' : ''
+          {availablePlans.length === 0 ? (
+            <p className="text-center text-gray-400 text-lg col-span-full">Nenhum plano disponível no momento. Por favor, tente novamente mais tarde.</p>
+          ) : (
+            availablePlans.map((plan, index) => (
+              <div
+                key={plan.id}
+                className={`relative bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm border-2 ${plan.name === recommendedPlan ? 'border-blue-500' : 'border-gray-700'} rounded-2xl p-8 transition-all duration-300 transform hover:scale-105 ${
+                  plan.name === recommendedPlan ? 'lg:scale-105 shadow-2xl shadow-blue-500/20' : 'hover:shadow-xl'
                 }`}
               >
-                Ativar meu projeto com este plano
-              </button>
-            </div>
-          ))}
+                {plan.name === recommendedPlan && (
+                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                    <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-1">
+                      <Star className="w-4 h-4" />
+                      Recomendado para você
+                    </div>
+                  </div>
+                )}
+
+                <div className="text-center mb-8">
+                  <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
+                  <p className="text-gray-400 mb-4">{plan.description}</p>
+                  <div className="mb-4">
+                    <span className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                      R$ {plan.price_details.unit_amount.toFixed(2).replace('.', ',')}
+                    </span>
+                    <span className="text-gray-400 text-lg">/mês</span>
+                  </div>
+                </div>
+
+                <div className="space-y-4 mb-8">
+                  {/* Features from metadata or hardcoded if not available */}
+                  {(plan.metadata?.features as string[] || []).map((feature: string, featureIndex: number) => (
+                    <div key={featureIndex} className="flex items-center gap-3">
+                      <div className={`flex-shrink-0 w-5 h-5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center`}>
+                        <Check className="w-3 h-3 text-white" />
+                      </div>
+                      <span className="text-gray-300">{feature}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => handleSelectPlan(plan as StripeProduct & { price_details: StripePrice })}
+                  className={`w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:opacity-90 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 ${
+                    plan.name === recommendedPlan ? 'shadow-lg hover:shadow-blue-500/25' : ''
+                  }`}
+                >
+                  Ativar meu projeto com este plano
+                </button>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>
