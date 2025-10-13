@@ -181,7 +181,7 @@ export default function FunnelSummary() {
         }
         if (additionalNotes) {
           generatedSummary += ` Observações adicionais: ${additionalNotes}.`;
-        } // <-- Added missing closing brace for the 'if (additionalNotes)' block
+        } // <-- Corrected: Added missing closing brace for the 'if (additionalNotes)' block
         generatedSummary += ` Entrega estimada em até 7 dias úteis (pode variar conforme complexidade).`;
         generatedSummary += ` Seu sistema virá hospedado, otimizado e com suporte direto via WhatsApp.`;
 
