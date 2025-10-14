@@ -1,4 +1,4 @@
-import { MessageCircle } from 'lucide-react';
+import { MessageCircle, Mail, MapPin } from 'lucide-react'; // Adicionado Mail e MapPin
 
 export default function Contato() {
   const handleWhatsAppClick = () => {
