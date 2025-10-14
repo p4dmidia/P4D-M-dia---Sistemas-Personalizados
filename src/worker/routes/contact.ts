@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
+import { SupabaseClient } from '@supabase/supabase-js'; // Adicionado import
 
 // Define o schema para validação dos dados do formulário de contato
 const ContactFormSchema = z.object({
@@ -18,7 +19,14 @@ type Bindings = {
   // Ex: EMAIL_SERVICE_API_KEY?: string;
 };
 
-const contact = new Hono<{ Bindings: Bindings }>();
+type Variables = {
+  supabase: SupabaseClient;
+  supabaseAdmin: SupabaseClient;
+  userId?: string;
+  userRole?: string;
+};
+
+const contact = new Hono<{ Bindings: Bindings, Variables: Variables }>();
 
 contact.post(
   '/',

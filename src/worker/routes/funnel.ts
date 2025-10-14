@@ -12,6 +12,9 @@ type Bindings = {
 
 type Variables = {
   supabase: SupabaseClient; // Define supabase in Variables
+  supabaseAdmin: SupabaseClient; // Adicionado supabaseAdmin
+  userId?: string; // Adicionado userId
+  userRole?: string; // Adicionado userRole
 };
 
 const funnel = new Hono<{ Bindings: Bindings, Variables: Variables }>();
@@ -41,8 +44,8 @@ funnel.post(
     funnel_id: z.string().uuid().nullable().optional(),
   })),
   async (c) => {
-    const { step_data, current_step, completed, funnel_id } = c.req.valid('json');
     const userIdFromContext = c.get('userId'); // Get user ID from middleware if authenticated
+    const { step_data, current_step, completed, funnel_id } = c.req.valid('json');
     const supabase = c.get('supabase'); // Get Supabase client from context
 
     const actualUserId = userIdFromContext || null; // Prioritize authenticated user, otherwise null for anonymous

@@ -89,7 +89,7 @@ profiles.get('/', adminOnly, async (c) => {
         auth_users: {
           email: userData.user?.email || 'N/A',
           created_at: userData.user?.created_at || 'N/A',
-          banned_until: userData.user?.banned_until || null,
+          banned_until: userData.user?.banned_until || null, // Acessar banned_until diretamente do user
         },
       };
     }));
@@ -206,7 +206,7 @@ profiles.put(
       }
 
       // Retorna o perfil atualizado e os dados de autenticação
-      return c.json({ ...updatedProfile, auth_users: { email: updatedUserAuth.user?.email, banned_until: updatedUserAuth.user?.banned_until } }, 200);
+      return c.json({ ...updatedProfile, auth_users: { email: updatedUserAuth.user?.email, banned_until: updatedUserAuth.user?.banned_until || null } }, 200);
     } catch (error) {
       console.error('Error updating profile:', error);
       return c.json({ error: 'Internal server error' }, 500);

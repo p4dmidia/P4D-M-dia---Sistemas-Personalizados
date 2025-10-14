@@ -11,6 +11,9 @@ type Bindings = {
 
 type Variables = {
   supabase: SupabaseClient; // Define supabase in Variables
+  supabaseAdmin: SupabaseClient; // Adicionado supabaseAdmin
+  userId?: string; // Adicionado userId
+  userRole?: string; // Adicionado userRole
 };
 
 const auth = new Hono<{ Bindings: Bindings, Variables: Variables }>();

@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { ProjectSchema } from '@/shared/types';
 import { SupabaseClient } from '@supabase/supabase-js';
-import { z } from 'zod';
+// import { z } from 'zod'; // Removido importação não utilizada
 
 type Bindings = {
   SUPABASE_URL: string;

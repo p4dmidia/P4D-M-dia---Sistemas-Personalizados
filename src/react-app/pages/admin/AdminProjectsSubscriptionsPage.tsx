@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react'; // Removido importação explícita de React
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { ChevronLeft, FileText, DollarSign, Edit, Trash2, PlusCircle } from 'lucide-react'; // Removido Code, Search, Check, Info
-import { Project, Subscription } from '@/shared/types';
+import { ChevronLeft, FileText, DollarSign, Edit, Trash2, PlusCircle } from 'lucide-react';
+import { Project, Subscription } => '@/shared/types';
 import { supabase } from '@/integrations/supabase/browserClient';
 import EditProjectModal from '@/react-app/components/admin/EditProjectModal';
 import CreateProjectModal from '@/react-app/components/admin/CreateProjectModal'; // Importar o novo modal

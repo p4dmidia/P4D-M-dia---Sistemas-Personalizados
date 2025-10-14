@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'; // Removido importa√ß√
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { supabase } from '@/integrations/supabase/browserClient';
-import { LogOut, UserCircle, Check, X, Settings, MessageCircle, Calendar, FileText, Code, Search, DollarSign, TrendingUp, Sparkles, Hourglass, Info, LayoutDashboard } from 'lucide-react'; // Removido CreditCard, ChevronDown, ChevronUp
+import { LogOut, UserCircle, Check, X, Settings, MessageCircle, Calendar, FileText, Code, Search, DollarSign, TrendingUp, Sparkles, Hourglass, Info, LayoutDashboard } from 'lucide-react';
 import Confetti from 'react-confetti';
 import { Project, Subscription, FunnelResponse } from '@/shared/types'; // Import types
 import { User } from '@supabase/supabase-js'; // Import Supabase User type

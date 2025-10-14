@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react'; // Removido importação explícita de React
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { ChevronLeft, User, Mail, Calendar, Edit, Trash2, UserPlus } from 'lucide-react'; // Removido Ban, CheckCircle2
-import { supabase } from '@/integrations/supabase/browserClient'; // Importar o cliente Supabase
+import { ChevronLeft, User, Mail, Calendar, Edit, Trash2, UserPlus } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/browserClient';
 import EditUserModal from '@/react-app/components/admin/EditUserModal';
 import CreateUserModal from '@/react-app/components/admin/CreateUserModal';
 
@@ -15,15 +15,14 @@ interface UserProfile {
   avatar_url: string | null;
   role: 'client' | 'admin';
   updated_at: string;
-  stripe_customer_id: string | null; // Alterado de asaas_customer_id para stripe_customer_id
+  stripe_customer_id: string | null;
   auth_users: {
     email: string;
     created_at: string;
-    banned_until: string | null; // Adicionado para status de bloqueio
+    banned_until: string | null;
   };
 }
 
-// Nova interface para o usuário que será editado, correspondendo às props do EditUserModal
 interface EditableUser {
   id: string;
   first_name: string | null;
@@ -40,7 +39,7 @@ export default function AdminUsersPage() {
   const [error, setError] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<EditableUser | null>(null); // Usar a nova interface
+  const [editingUser, setEditingUser] = useState<EditableUser | null>(null);
   const [currentAdminId, setCurrentAdminId] = useState<string | null>(null);
 
   const fetchUsers = async () => {

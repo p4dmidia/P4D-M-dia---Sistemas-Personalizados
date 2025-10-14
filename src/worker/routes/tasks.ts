@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { TaskSchema } from '@/shared/types';
 import { SupabaseClient } from '@supabase/supabase-js';
-import { z } from 'zod';
+// import { z } from 'zod'; // Removido importação não utilizada
 
 type Bindings = {
   SUPABASE_URL: string;
@@ -195,7 +195,7 @@ tasks.delete('/:id', adminOnly, async (c) => {
 
     if (error) {
       console.error('Supabase delete task error:', error);
-      return c.json({ error: 'Failed to delete task' }, 500);
+      return c.json({ error: error.message || 'Failed to delete task' }, 500);
     }
     return c.json({ message: 'Task deleted successfully' }, 204);
   } catch (error) {

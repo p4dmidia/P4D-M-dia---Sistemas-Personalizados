@@ -1,8 +1,8 @@
 import { Rocket, Target, DollarSign, Headphones, Zap } from 'lucide-react';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
+// import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
 export default function Vantagens() {
-  const navigate = useNavigate(); // Initialize useNavigate
+  // const navigate = useNavigate(); // Initialize useNavigate
 
   const advantages = [
     {

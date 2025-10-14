@@ -1,6 +1,6 @@
 "use client";
 
-import { default as React } from 'react'; // Removido importação explícita de React
+// import { default as React } from 'react'; // Removido importação explícita de React
 
 interface FunnelProgressBarProps {
   currentStep: number;

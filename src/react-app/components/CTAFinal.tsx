@@ -1,10 +1,10 @@
 "use client";
 
 import { ArrowRight, Sparkles } from 'lucide-react';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
+// import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
 export default function CTAFinal() {
-  const navigate = useNavigate(); // Initialize useNavigate
+  // const navigate = useNavigate(); // Initialize useNavigate
 
   // Removed scrollToSection as it's no longer needed for these buttons
 
