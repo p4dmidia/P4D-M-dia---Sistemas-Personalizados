@@ -38,7 +38,8 @@ type PlanWithPriceDetails = StripeProduct & { price_details: StripePrice };
 export default function FunnelSummary() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [formData, setFormData] = useState<Record<string, any>>(location.state?.formData || {});
+  // Ajustado o tipo de formData para usar FunnelResponse['step_data']
+  const [formData, setFormData] = useState<FunnelResponse['step_data']>(location.state?.formData || {});
   const [funnelId, setFunnelId] = useState<string | null>(location.state?.funnelId || null);
   const [summaryText, setSummaryText] = useState<string>('Gerando resumo do seu projeto...');
   const [recommendedPlan, setRecommendedPlan] = useState<string | null>(null);
