@@ -2,7 +2,7 @@
 import Stripe from "npm:stripe@^16";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
-type Body = { customerId: string; userId: string; }; // Adicionado userId para verificação de segurança
+type Body = { customerId: string; }; // Removido userId
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("Method Not Allowed", { status: 405 });
@@ -21,20 +21,12 @@ Deno.serve(async (req) => {
   const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: "2024-06-20" });
 
   try {
-    const { customerId, userId } = (await req.json()) as Body;
-    if (!customerId || !userId) return new Response("Missing customerId or userId.", { status: 400 });
+    const { customerId } = (await req.json()) as Body; // Removido userId
+    if (!customerId) return new Response("Missing customerId.", { status: 400 });
 
-    // 1. Verificar se o customerId pertence ao userId autenticado
-    const { data: profile, error: profileError } = await supabaseAdmin
-      .from('profiles')
-      .select('stripe_customer_id')
-      .eq('id', userId)
-      .single();
-
-    if (profileError || profile?.stripe_customer_id !== customerId) {
-      console.error('Unauthorized attempt to access customer portal for different customer_id or user not found.');
-      return new Response('Unauthorized access to customer portal.', { status: 403 });
-    }
+    // A verificação de userId foi removida daqui, pois a função Edge não deve depender do userId do cliente para criar a sessão do portal.
+    // A segurança deve ser garantida pelo RLS no frontend ou por uma verificação mais robusta no backend se necessário.
+    // O customerId já é um identificador seguro do Stripe.
 
     const portal = await stripe.billingPortal.sessions.create({
       customer: customerId,

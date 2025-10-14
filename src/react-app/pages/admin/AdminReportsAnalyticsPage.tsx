@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react'; // Removido importação explícita de React
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { ChevronLeft, BarChart2, TrendingUp, Users, DollarSign, Info, CheckCircle2, Hourglass, Code, FileText } from 'lucide-react';

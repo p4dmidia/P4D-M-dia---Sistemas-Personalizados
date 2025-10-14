@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { X, Save, FileText, Code, Search, Check } from 'lucide-react';
+import { X, Save, FileText, Code, Search, Check, ChevronDown } from 'lucide-react'; // Adicionado ChevronDown
 import { Project } from '@/shared/types';
 
 interface EditProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
   project: Project | null;
-  onSave: (projectId: string, data: { status: string; summary?: string; estimated_delivery?: string }) => Promise<void>;
+  onSave: (projectId: string, data: { status: string; summary?: string | null; estimated_delivery?: string | null }) => Promise<void>; // Ajustado para aceitar null
 }
 
 const projectStatusOptions = [

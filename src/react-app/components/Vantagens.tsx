@@ -37,12 +37,7 @@ export default function Vantagens() {
     }
   ];
 
-  const scrollToSection = (id: string) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
+  // scrollToSection removido pois não é mais utilizado
 
   const handleWhatsAppClick = () => {
     window.open('https://w.app/k5ws4g', '_blank'); // Direct WhatsApp link

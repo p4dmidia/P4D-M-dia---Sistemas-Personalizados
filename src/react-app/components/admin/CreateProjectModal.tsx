@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { X, Save, FileText, User, DollarSign, Calendar } from 'lucide-react';
+import { X, Save, FileText, User, Calendar } from 'lucide-react'; // DollarSign removido
 import { Project } from '@/shared/types';
 
 interface CreateProjectModalProps {
@@ -33,7 +33,7 @@ export default function CreateProjectModal({ isOpen, onClose, onCreate, users }:
     try {
       await onCreate({
         user_id: userId,
-        funnel_response_id: funnelResponseId || undefined, // Optional
+        funnel_response_id: funnelResponseId || null, // Agora aceita null
         plan_name: planName,
         status,
         summary: summary || null,

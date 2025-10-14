@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react'; // Removido importação explícita de React
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { ChevronLeft, User, Mail, Calendar, Edit, Trash2, UserPlus, Ban, CheckCircle2 } from 'lucide-react';
+import { ChevronLeft, User, Mail, Calendar, Edit, Trash2, UserPlus } from 'lucide-react'; // Removido Ban, CheckCircle2
 import { supabase } from '@/integrations/supabase/browserClient'; // Importar o cliente Supabase
 import EditUserModal from '@/react-app/components/admin/EditUserModal';
 import CreateUserModal from '@/react-app/components/admin/CreateUserModal';
@@ -15,12 +15,22 @@ interface UserProfile {
   avatar_url: string | null;
   role: 'client' | 'admin';
   updated_at: string;
-  asaas_customer_id: string | null;
+  stripe_customer_id: string | null; // Alterado de asaas_customer_id para stripe_customer_id
   auth_users: {
     email: string;
     created_at: string;
     banned_until: string | null; // Adicionado para status de bloqueio
   };
+}
+
+// Nova interface para o usuário que será editado, correspondendo às props do EditUserModal
+interface EditableUser {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  email: string;
+  role: 'client' | 'admin';
+  is_banned: boolean;
 }
 
 export default function AdminUsersPage() {
@@ -30,7 +40,7 @@ export default function AdminUsersPage() {
   const [error, setError] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
+  const [editingUser, setEditingUser] = useState<EditableUser | null>(null); // Usar a nova interface
   const [currentAdminId, setCurrentAdminId] = useState<string | null>(null);
 
   const fetchUsers = async () => {
@@ -79,8 +89,11 @@ export default function AdminUsersPage() {
 
   const handleEditUser = (user: UserProfile) => {
     setEditingUser({
-      ...user,
+      id: user.id,
+      first_name: user.first_name,
+      last_name: user.last_name,
       email: user.auth_users.email,
+      role: user.role,
       is_banned: !!user.auth_users.banned_until,
     });
     setIsEditModalOpen(true);

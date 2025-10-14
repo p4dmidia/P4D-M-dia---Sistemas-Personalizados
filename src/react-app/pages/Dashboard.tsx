@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react'; // Removido importação explícita de React
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { supabase } from '@/integrations/supabase/browserClient';
-import { LogOut, UserCircle, Check, X, Settings, MessageCircle, Calendar, FileText, Code, Search, DollarSign, CreditCard, TrendingUp, Sparkles, Hourglass, Info, ChevronDown, ChevronUp, LayoutDashboard } from 'lucide-react';
+import { LogOut, UserCircle, Check, X, Settings, MessageCircle, Calendar, FileText, Code, Search, DollarSign, TrendingUp, Sparkles, Hourglass, Info, LayoutDashboard } from 'lucide-react'; // Removido CreditCard, ChevronDown, ChevronUp
 import Confetti from 'react-confetti';
 import { Project, Subscription, FunnelResponse } from '@/shared/types'; // Import types
 import { User } from '@supabase/supabase-js'; // Import Supabase User type
@@ -27,7 +27,7 @@ const timelineSteps = [
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [userProfile, setUserProfile] = useState<{ first_name?: string; last_name?: string; email?: string; avatar_url?: string; role?: string; stripe_customer_id?: string } | null>(null); // Adicionado stripe_customer_id
+  const [userProfile, setUserProfile] = useState<{ id?: string; first_name?: string; last_name?: string; email?: string; avatar_url?: string; role?: string; stripe_customer_id?: string } | null>(null); // Adicionado id e stripe_customer_id
   const [projects, setProjects] = useState<Project[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [funnelResponse, setFunnelResponse] = useState<FunnelResponse | null>(null);
@@ -67,10 +67,10 @@ export default function Dashboard() {
         console.error('Erro ao buscar perfil:', profileError);
         toast.error('Erro ao carregar dados do perfil.');
       } else if (profile) {
-        setUserProfile({ ...profile, email: user.email });
+        setUserProfile({ ...profile, id: user.id, email: user.email });
         // O redirecionamento de admin foi removido, o ProtectedRoute lida com isso
       } else {
-        setUserProfile({ first_name: user.user_metadata.first_name || user.email?.split('@')[0], email: user.email, role: 'client' });
+        setUserProfile({ id: user.id, first_name: user.user_metadata.first_name || user.email?.split('@')[0], email: user.email, role: 'client' });
       }
 
       // Buscar projetos
@@ -130,7 +130,7 @@ export default function Dashboard() {
     } finally {
       setLoading(false); // Garantir que o loading seja sempre definido como false
     }
-  }, [navigate]); // Removido 'subscriptions' das dependências
+  }, [navigate, subscriptions]); // Adicionado subscriptions às dependências
 
   useEffect(() => {
     fetchDashboardData();
@@ -183,7 +183,7 @@ export default function Dashboard() {
   };
 
   const handleManagePayment = async () => {
-    if (!userProfile?.stripe_customer_id || !userProfile?.email || !userProfile?.first_name) {
+    if (!userProfile?.stripe_customer_id || !userProfile?.email || !userProfile?.id) { // Alterado para userProfile.id
       toast.error('Dados do cliente Stripe não encontrados. Por favor, entre em contato com o suporte.', { id: 'stripePortal' });
       return;
     }
@@ -212,6 +212,7 @@ export default function Dashboard() {
 
       const { url } = await response.json();
       toast.success('Redirecionando...', { id: 'stripePortal' });
+      
       window.location.href = url;
 
     } catch (error: any) {

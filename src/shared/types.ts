@@ -42,7 +42,7 @@ export type FunnelResponse = z.infer<typeof FunnelResponseSchema>;
 export const ProjectSchema = z.object({
   id: z.string().uuid().optional(),
   user_id: z.string().uuid(),
-  funnel_response_id: z.string().uuid(),
+  funnel_response_id: z.string().uuid().nullable().optional(), // Alterado para nullable e optional
   plan_name: z.string(),
   status: z.string().default('briefing_received'),
   summary: z.string().nullable().optional(),

@@ -4,12 +4,7 @@ import { useNavigate } from 'react-router-dom'; // Import useNavigate
 export default function QuemSomos() {
   const navigate = useNavigate(); // Initialize useNavigate
 
-  const scrollToSection = (id: string) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
+  // scrollToSection removido pois não é mais utilizado
 
   const handleStartFunnel = () => {
     navigate('/funnel'); // Navigate to the funnel page

@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react'; // Removido importação explícita de React
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { ChevronLeft, Settings, Globe, Bell, Palette, Info, Save } from 'lucide-react';
+import { ChevronLeft, Globe, Bell, Palette, Save } from 'lucide-react'; // Removido Settings, Info
 import { supabase } from '@/integrations/supabase/browserClient';
 
 interface SystemSettings {

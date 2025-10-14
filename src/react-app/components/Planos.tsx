@@ -97,12 +97,7 @@ export default function Planos() {
     }
   ];
 
-  const scrollToSection = (id: string) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
+  // scrollToSection removido pois não é mais utilizado
 
   const handleStartFunnel = () => {
     navigate('/funnel'); // Navigate to the funnel page

@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react'; // Removido importação explícita de React
 import { useLocation, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { supabase } from '@/integrations/supabase/browserClient';
-import { FunnelResponse } from '@/shared/types';
+import { FunnelResponse } from '@/shared/types'; // FunnelResponse ainda é usado
 import { funnelSteps } from '@/react-app/pages/Funnel';
 import { Check, Star } from 'lucide-react';
 
@@ -32,10 +32,8 @@ interface StripePrice {
   metadata: Record<string, any> | null;
 }
 
-interface FunnelSummaryState {
-  formData: Record<string, any>;
-  funnelId: string;
-}
+// Tipo para o plano com detalhes de preço
+type PlanWithPriceDetails = StripeProduct & { price_details: StripePrice };
 
 export default function FunnelSummary() {
   const navigate = useNavigate();
@@ -47,7 +45,7 @@ export default function FunnelSummary() {
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [availablePlans, setAvailablePlans] = useState<StripeProduct[]>([]); // Estado para armazenar os planos do Supabase
+  const [availablePlans, setAvailablePlans] = useState<PlanWithPriceDetails[]>([]); // Estado para armazenar os planos do Supabase
 
   // Helper function to get the label for a given value and step ID
   const getOptionLabel = (stepId: string, value: string): string => {
@@ -69,14 +67,14 @@ export default function FunnelSummary() {
         return;
       }
       setUserId(user.id);
-      setUserEmail(user.email);
+      setUserEmail(user.email || null); // Garante que user.email é string ou null
     };
     checkAuthAndSetUser();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         setUserId(session.user.id);
-        setUserEmail(session.user.email);
+        setUserEmail(session.user.email || null); // Garante que session.user.email é string ou null
       } else {
         toast.error('Sua sessão expirou. Por favor, faça login novamente.');
         navigate('/login');
@@ -128,7 +126,7 @@ export default function FunnelSummary() {
           // Filter out products without active prices or with multiple prices (for simplicity, take the first active)
           const formattedPlans = productsWithPrices
             .map(product => {
-              const activePrice = product.prices.find(price => price.active);
+              const activePrice = product.prices.find((price: StripePrice) => price.active); // Tipado price
               if (activePrice) {
                 return {
                   ...product,
@@ -137,7 +135,7 @@ export default function FunnelSummary() {
               }
               return null;
             })
-            .filter(Boolean) as (StripeProduct & { price_details: StripePrice })[];
+            .filter(Boolean) as PlanWithPriceDetails[];
           
           setAvailablePlans(formattedPlans);
         }
@@ -152,7 +150,7 @@ export default function FunnelSummary() {
     if (userId !== null) {
       loadData();
     }
-  }, [userId]);
+  }, [userId, formData]); // Adicionado formData às dependências para re-executar se o estado inicial for vazio
 
   // Effect to generate summary and recommend plan (now using availablePlans)
   useEffect(() => {
@@ -181,7 +179,7 @@ export default function FunnelSummary() {
         }
         if (additionalNotes) {
           generatedSummary += ` Observações adicionais: ${additionalNotes}.`;
-        } // <-- Corrected: Added missing closing brace for the 'if (additionalNotes)' block
+        }
         generatedSummary += ` Entrega estimada em até 7 dias úteis (pode variar conforme complexidade).`;
         generatedSummary += ` Seu sistema virá hospedado, otimizado e com suporte direto via WhatsApp.`;
 
@@ -217,9 +215,9 @@ export default function FunnelSummary() {
 
       generateSummaryAndRecommendPlan();
     }
-  }, [formData, loading, availablePlans]);
+  }, [formData, loading, availablePlans, getOptionLabel]);
 
-  const handleSelectPlan = async (plan: StripeProduct & { price_details: StripePrice }) => {
+  const handleSelectPlan = async (plan: PlanWithPriceDetails) => { // Tipado plan
     if (!userId || !userEmail) {
       toast.error('Usuário não autenticado. Por favor, faça login.', { id: 'stripe-checkout' });
       navigate('/login');
@@ -312,7 +310,7 @@ export default function FunnelSummary() {
           {availablePlans.length === 0 ? (
             <p className="text-center text-gray-400 text-lg col-span-full">Nenhum plano disponível no momento. Por favor, tente novamente mais tarde.</p>
           ) : (
-            availablePlans.map((plan, index) => (
+            availablePlans.map((plan, _index) => ( // Alterado index para _index
               <div
                 key={plan.id}
                 className={`relative bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm border-2 ${plan.name === recommendedPlan ? 'border-blue-500' : 'border-gray-700'} rounded-2xl p-8 transition-all duration-300 transform hover:scale-105 ${
@@ -352,7 +350,7 @@ export default function FunnelSummary() {
                 </div>
 
                 <button
-                  onClick={() => handleSelectPlan(plan as StripeProduct & { price_details: StripePrice })}
+                  onClick={() => handleSelectPlan(plan)}
                   className={`w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:opacity-90 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 ${
                     plan.name === recommendedPlan ? 'shadow-lg hover:shadow-blue-500/25' : ''
                   }`}

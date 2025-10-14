@@ -1,7 +1,6 @@
 "use client";
 
-import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router-dom'; // Removido importação explícita de React
 import { ChevronLeft } from 'lucide-react';
 
 export default function TermsOfUse() {

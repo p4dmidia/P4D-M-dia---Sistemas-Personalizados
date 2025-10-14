@@ -86,7 +86,6 @@ Deno.serve(async (req) => {
         amount: amount,
         status: 'pending',
         stripe_price_id: priceId,
-        // funnel_response_id: funnelResponseId || null, // REMOVIDO: Esta coluna não pertence à tabela subscriptions
       })
       .select()
       .single();

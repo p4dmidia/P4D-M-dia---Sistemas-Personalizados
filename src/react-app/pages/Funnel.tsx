@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react'; // Removido importação explícita de React
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import FunnelProgressBar from '@/react-app/components/FunnelProgressBar';

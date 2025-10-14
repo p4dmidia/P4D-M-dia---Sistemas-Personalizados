@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react'; // Removido importação explícita de React
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { ChevronLeft, FileText, DollarSign, Code, Search, Check, Info, Edit, Trash2, PlusCircle } from 'lucide-react';
+import { ChevronLeft, FileText, DollarSign, Edit, Trash2, PlusCircle } from 'lucide-react'; // Removido Code, Search, Check, Info
 import { Project, Subscription } from '@/shared/types';
 import { supabase } from '@/integrations/supabase/browserClient';
 import EditProjectModal from '@/react-app/components/admin/EditProjectModal';
@@ -93,7 +93,7 @@ export default function AdminProjectsSubscriptionsPage() {
 
   const handleSaveProject = async (
     projectId: string,
-    data: { status: string; summary?: string; estimated_delivery?: string }
+    data: { status: string; summary?: string | null; estimated_delivery?: string | null }
   ) => {
     toast.loading('Salvando alterações do projeto...', { id: 'saveProject' });
     try {
@@ -225,7 +225,7 @@ export default function AdminProjectsSubscriptionsPage() {
   };
 
   const handleEditSubscription = (subscriptionId: string) => {
-    toast.info(`Editar assinatura ${subscriptionId} (funcionalidade em breve!)`);
+    toast(`Editar assinatura ${subscriptionId} (funcionalidade em breve!)`); // Alterado de toast.info para toast
   };
 
   const handleDeleteSubscription = async (subscriptionId: string) => {
