@@ -1,61 +1,8 @@
-import { useState } from 'react';
-import { Mail, Phone, MapPin, Send, Instagram, Linkedin, Youtube } from 'lucide-react';
-import toast from 'react-hot-toast'; // Importar toast para feedback ao usuário
+import { MessageCircle } from 'lucide-react';
 
 export default function Contato() {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    company: '',
-    message: ''
-  });
-  const [loading, setLoading] = useState(false); // Adicionar estado de carregamento
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    toast.loading('Enviando mensagem...', { id: 'contactForm' }); // Mostrar toast de carregamento
-
-    try {
-      const response = await fetch('/api/contact', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...formData,
-          recipientEmail: 'agenciap4d@gmail.com', // E-mail do destinatário
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Falha ao enviar mensagem.');
-      }
-
-      toast.success('Mensagem enviada com sucesso! Entraremos em contato em breve.', { id: 'contactForm' });
-      // Resetar formulário
-      setFormData({
-        name: '',
-        email: '',
-        phone: '',
-        company: '',
-        message: ''
-      });
-    } catch (error: any) {
-      console.error('Erro ao enviar formulário de contato:', error);
-      toast.error(error.message || 'Erro ao enviar mensagem. Tente novamente.', { id: 'contactForm' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+  const handleWhatsAppClick = () => {
+    window.open('https://w.app/k5ws4g', '_blank'); // Usando o link direto fornecido
   };
 
   return (
@@ -69,111 +16,31 @@ export default function Contato() {
             </span>
           </h2>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-            Pronto para revolucionar seu negócio? Vamos conversar sobre seu projeto
+            Pronto para revolucionar seu negócio? Fale conosco agora!
           </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          {/* Contact Form */}
-          <div className="bg-gradient-to-br from-gray-800/40 to-gray-900/40 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-8">
-            <h3 className="text-2xl font-bold text-white mb-6">Solicite uma Demonstração</h3>
-            
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-2">
-                    Nome Completo *
-                  </label>
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    required
-                    value={formData.name}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                    placeholder="Seu nome"
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
-                    Email *
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    required
-                    value={formData.email}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                    placeholder="seu@email.com"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-gray-300 mb-2">
-                    Telefone
-                  </label>
-                  <input
-                    type="tel"
-                    id="phone"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                    placeholder="(11) 99999-9999"
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="company" className="block text-sm font-medium text-gray-300 mb-2">
-                    Empresa
-                  </label>
-                  <input
-                    type="text"
-                    id="company"
-                    name="company"
-                    value={formData.company}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                    placeholder="Nome da empresa"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="message" className="block text-sm font-medium text-gray-300 mb-2">
-                  Mensagem *
-                </label>
-                <textarea
-                  id="message"
-                  name="message"
-                  required
-                  rows={4}
-                  value={formData.message}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none"
-                  placeholder="Conte-nos sobre seu projeto e suas necessidades..."
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading} 
-                /* Desabilita o botão durante o carregamento */
-                className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-4 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-blue-500/25 flex items-center justify-center gap-2"
-              >
-                <Send className="w-5 h-5" />
-                {loading ? 'Enviando...' : 'Enviar Mensagem'} {/* Altera o texto do botão */}
-              </button>
-            </form>
+          {/* WhatsApp CTA */}
+          <div className="bg-gradient-to-br from-gray-800/40 to-gray-900/40 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-8 text-center flex flex-col justify-center items-center">
+            <MessageCircle className="w-16 h-16 text-green-400 mb-6" />
+            <h3 className="text-3xl font-bold text-white mb-4">
+              Fale com um Especialista no WhatsApp
+            </h3>
+            <p className="text-lg text-gray-300 mb-8 max-w-md">
+              Tire suas dúvidas, solicite uma demonstração ou comece seu projeto agora mesmo.
+              Nosso time está pronto para te atender!
+            </p>
+            <button
+              onClick={handleWhatsAppClick}
+              className="w-full md:w-auto bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-4 px-8 rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-green-500/25 flex items-center justify-center gap-3"
+            >
+              <MessageCircle className="w-6 h-6" />
+              Iniciar Conversa no WhatsApp
+            </button>
           </div>
 
-          {/* Contact Info */}
+          {/* Contact Info (mantido do original) */}
           <div className="space-y-8">
             {/* Contact Methods */}
             <div className="bg-gradient-to-br from-gray-800/40 to-gray-900/40 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-8">
@@ -182,22 +49,22 @@ export default function Contato() {
               <div className="space-y-6">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                    <Mail className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h4 className="text-lg font-semibold text-white">Email</h4>
-                    <p className="text-gray-400">contato@p4dmidia.com.br</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
-                    <Phone className="w-6 h-6 text-white" />
+                    <MessageCircle className="w-6 h-6 text-white" />
                   </div>
                   <div>
                     <h4 className="text-lg font-semibold text-white">WhatsApp</h4>
                     <p className="text-gray-400">(31) 99607-0786</p>
                     <p className="text-gray-400">(34) 99675-6400</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                    <Mail className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-semibold text-white">Email</h4>
+                    <p className="text-gray-400">contato@p4dmidia.com.br</p>
                   </div>
                 </div>
 
