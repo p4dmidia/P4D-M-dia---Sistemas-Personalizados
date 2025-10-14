@@ -159,7 +159,6 @@ tasks.put(
     try {
       let query = supabase.from('tasks').update({ ...updateData, updated_at: new Date().toISOString() }).eq('id', taskId);
 
-      // RLS for tasks already checks project owner, so we can rely on that
       // If admin, bypass RLS by using supabaseAdmin
       if (userRole === 'admin') {
         query = c.get('supabaseAdmin').from('tasks').update({ ...updateData, updated_at: new Date().toISOString() }).eq('id', taskId);
@@ -197,7 +196,7 @@ tasks.delete('/:id', adminOnly, async (c) => {
       console.error('Supabase delete task error:', error);
       return c.json({ error: error.message || 'Failed to delete task' }, 500);
     }
-    return c.json({ message: 'Task deleted successfully' }, { status: 204 }); // Corrigido aqui
+    return c.json({ message: 'Task deleted successfully' }, 204); // Corrigido aqui
   } catch (error) {
     console.error('Error deleting task:', error);
     return c.json({ error: 'Internal server error' }, 500);

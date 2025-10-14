@@ -91,7 +91,7 @@ profiles.get('/', adminOnly, async (c) => {
         auth_users: {
           email: userAuthData?.email || 'N/A',
           created_at: userAuthData?.created_at || 'N/A',
-          banned_until: userAuthData?.banned_until || null, // Corrigido aqui
+          banned_until: (userAuthData as any)?.banned_until || null, // Usando asserção de tipo
         },
       };
     }));
@@ -209,7 +209,7 @@ profiles.put(
 
       // Retorna o perfil atualizado e os dados de autenticação
       const updatedUserAuthData: User | null = updatedUserAuth.user;
-      return c.json({ ...updatedProfile, auth_users: { email: updatedUserAuthData?.email, banned_until: updatedUserAuthData?.banned_until || null } }, 200); // Corrigido aqui
+      return c.json({ ...updatedProfile, auth_users: { email: updatedUserAuthData?.email, banned_until: (updatedUserAuthData as any)?.banned_until || null } }, 200); // Usando asserção de tipo
     } catch (error) {
       console.error('Error updating profile:', error);
       return c.json({ error: 'Internal server error' }, 500);
@@ -229,7 +229,7 @@ profiles.delete('/:id', adminOnly, async (c) => {
       console.error('Supabase delete user error:', error);
       return c.json({ error: error.message || 'Failed to delete user' }, 500);
     }
-    return c.json({ message: 'User deleted successfully' }, { status: 204 }); // Corrigido aqui
+    return c.json({ message: 'User deleted successfully' }, 204); // Corrigido aqui
   } catch (error) {
     console.error('Error deleting user:', error);
     return c.json({ error: 'Internal server error' }, 500);

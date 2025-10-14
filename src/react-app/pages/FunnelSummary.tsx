@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react'; // Removido importação explícita de React, useCallback
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { supabase } from '@/integrations/supabase/browserClient';
