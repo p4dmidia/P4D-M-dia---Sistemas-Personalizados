@@ -1,8 +1,46 @@
-import { MessageCircle, Mail, MapPin, Instagram, Linkedin, Youtube } from 'lucide-react'; // Adicionado Instagram, Linkedin, Youtube
+import { MessageCircle, Mail, MapPin, Instagram, Linkedin, Youtube, Send } from 'lucide-react';
+import React, { useState } from 'react';
+import toast from 'react-hot-toast';
 
 export default function Contato() {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+
   const handleWhatsAppClick = () => {
     window.open('https://w.app/k5ws4g', '_blank'); // Usando o link direto fornecido
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    toast.loading('Enviando mensagem...', { id: 'contactForm' });
+
+    try {
+      const response = await fetch('/api/contact', { // Assumindo /api/contact é o endpoint
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, email, message }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Falha ao enviar mensagem.');
+      }
+
+      toast.success('Mensagem enviada com sucesso!', { id: 'contactForm' });
+      setName('');
+      setEmail('');
+      setMessage('');
+    } catch (error: any) {
+      console.error('Erro ao enviar mensagem de contato:', error);
+      toast.error(error.message || 'Erro ao enviar mensagem. Tente novamente.', { id: 'contactForm' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -21,28 +59,84 @@ export default function Contato() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          {/* WhatsApp CTA */}
-          <div className="bg-gradient-to-br from-gray-800/40 to-gray-900/40 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-8 text-center flex flex-col justify-center items-center">
-            <MessageCircle className="w-16 h-16 text-green-400 mb-6" />
-            <h3 className="text-3xl font-bold text-white mb-4">
-              Fale com um Especialista no WhatsApp
+          {/* Contact Form */}
+          <div className="bg-gradient-to-br from-gray-800/40 to-gray-900/40 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-8">
+            <h3 className="text-3xl font-bold text-white mb-6 text-center">
+              Envie sua Mensagem
             </h3>
-            <p className="text-lg text-gray-300 mb-8 max-w-md">
-              Tire suas dúvidas, solicite uma demonstração ou comece seu projeto agora mesmo.
-              Nosso time está pronto para te atender!
-            </p>
-            <button
-              onClick={handleWhatsAppClick}
-              className="w-full md:w-auto bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-4 px-8 rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-green-500/25 flex items-center justify-center gap-3"
-            >
-              <MessageCircle className="w-6 h-6" />
-              Iniciar Conversa no WhatsApp
-            </button>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label htmlFor="name" className="sr-only">Nome</label>
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Seu Nome"
+                  required
+                />
+              </div>
+              <div>
+                <label htmlFor="email" className="sr-only">Email</label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Seu Email"
+                  required
+                />
+              </div>
+              <div>
+                <label htmlFor="message" className="sr-only">Mensagem</label>
+                <textarea
+                  id="message"
+                  name="message"
+                  rows={5}
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  placeholder="Sua Mensagem"
+                  required
+                ></textarea>
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-4 px-8 rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-blue-500/25 flex items-center justify-center gap-3"
+              >
+                <Send className="w-6 h-6" />
+                {loading ? 'Enviando...' : 'Enviar Mensagem'}
+              </button>
+            </form>
           </div>
 
           {/* Contact Info (mantido do original) */}
           <div className="space-y-8">
-            {/* Contact Methods */}
+            {/* WhatsApp CTA (moved from left to right, as an alternative contact method) */}
+            <div className="bg-gradient-to-br from-gray-800/40 to-gray-900/40 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-8 text-center flex flex-col justify-center items-center">
+              <MessageCircle className="w-16 h-16 text-green-400 mb-6" />
+              <h3 className="text-3xl font-bold text-white mb-4">
+                Fale com um Especialista no WhatsApp
+              </h3>
+              <p className="text-lg text-gray-300 mb-8 max-w-md">
+                Tire suas dúvidas, solicite uma demonstração ou comece seu projeto agora mesmo.
+                Nosso time está pronto para te atender!
+              </p>
+              <button
+                onClick={handleWhatsAppClick}
+                className="w-full md:w-auto bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-4 px-8 rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-green-500/25 flex items-center justify-center gap-3"
+              >
+                <MessageCircle className="w-6 h-6" />
+                Iniciar Conversa no WhatsApp
+              </button>
+            </div>
+
+            {/* Other Contact Methods */}
             <div className="bg-gradient-to-br from-gray-800/40 to-gray-900/40 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-8">
               <h3 className="text-2xl font-bold text-white mb-6">Outras formas de contato</h3>
               
@@ -103,30 +197,6 @@ export default function Contato() {
                 >
                   <Youtube className="w-6 h-6" />
                 </a>
-              </div>
-            </div>
-
-            {/* Quick Stats */}
-            <div className="bg-gradient-to-br from-gray-800/40 to-gray-900/40 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-8">
-              <h3 className="text-2xl font-bold text-white mb-6">Por que escolher a P4D?</h3>
-              
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-300">Tempo de resposta</span>
-                  <span className="text-blue-400 font-semibold">Até 2 horas</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-300">Projetos ativos</span>
-                  <span className="text-purple-400 font-semibold">+100</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-300">Anos de experiência</span>
-                  <span className="text-green-400 font-semibold">+3 anos</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-300">Taxa de sucesso</span>
-                  <span className="text-yellow-400 font-semibold">98%</span>
-                </div>
               </div>
             </div>
           </div>
