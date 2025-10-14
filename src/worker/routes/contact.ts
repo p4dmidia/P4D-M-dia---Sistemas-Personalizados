@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import { SupabaseClient } from '@supabase/supabase-js';
-import { Resend } from 'npm:resend@^3'; // Importar Resend
+import { Resend } from 'npm:resend'; // Removido o sufixo de versão para usar a versão do package.json
 
 // Define o schema para validação dos dados do formulário de contato
 const ContactFormSchema = z.object({
