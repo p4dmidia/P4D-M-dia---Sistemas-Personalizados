@@ -200,7 +200,7 @@ projects.delete('/:id', adminOnly, async (c) => {
       console.error('Supabase delete project error:', error);
       return c.json({ error: error.message || 'Failed to delete project' }, 500);
     }
-    return c.json({ message: 'Project deleted successfully' }, 204);
+    return c.json({ message: 'Project deleted successfully' }, { status: 204 }); // Corrigido aqui
   } catch (error: any) {
     console.error('Error deleting project:', error);
     return c.json({ error: 'Internal server error' }, 500);

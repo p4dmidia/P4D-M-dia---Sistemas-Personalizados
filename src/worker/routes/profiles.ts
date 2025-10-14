@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient, User } from '@supabase/supabase-js'; // Importar User explicitamente
 import { zValidator } from '@hono/zod-validator';
 import { UserSchema } from '@/shared/types'; // Reutilizando UserSchema para validação de perfil
 import { z } from 'zod';
@@ -69,7 +69,7 @@ profiles.get('/', adminOnly, async (c) => {
     // Seleciona dados do perfil e faz um join com a tabela auth.users para obter o email
     const { data: profilesData, error: profilesError } = await supabaseAdmin
       .from('profiles')
-      .select('id, first_name, last_name, avatar_url, role, updated_at, stripe_customer_id'); // Removido asaas_customer_id
+      .select('id, first_name, last_name, avatar_url, role, updated_at, stripe_customer_id');
 
     if (profilesError) {
       console.error('Supabase fetch all profiles error:', profilesError);
@@ -84,12 +84,14 @@ profiles.get('/', adminOnly, async (c) => {
         // Retorna um fallback se não conseguir buscar os dados de autenticação
         return { ...profile, auth_users: { email: 'N/A', created_at: 'N/A', banned_until: null } };
       }
+      // Acessar banned_until do objeto user, que é do tipo User
+      const userAuthData: User | null = userData.user;
       return {
         ...profile,
         auth_users: {
-          email: userData.user?.email || 'N/A',
-          created_at: userData.user?.created_at || 'N/A',
-          banned_until: userData.user?.banned_until || null, // Acessar banned_until diretamente do user
+          email: userAuthData?.email || 'N/A',
+          created_at: userAuthData?.created_at || 'N/A',
+          banned_until: userAuthData?.banned_until || null, // Corrigido aqui
         },
       };
     }));
@@ -206,7 +208,8 @@ profiles.put(
       }
 
       // Retorna o perfil atualizado e os dados de autenticação
-      return c.json({ ...updatedProfile, auth_users: { email: updatedUserAuth.user?.email, banned_until: updatedUserAuth.user?.banned_until || null } }, 200);
+      const updatedUserAuthData: User | null = updatedUserAuth.user;
+      return c.json({ ...updatedProfile, auth_users: { email: updatedUserAuthData?.email, banned_until: updatedUserAuthData?.banned_until || null } }, 200); // Corrigido aqui
     } catch (error) {
       console.error('Error updating profile:', error);
       return c.json({ error: 'Internal server error' }, 500);
@@ -226,7 +229,7 @@ profiles.delete('/:id', adminOnly, async (c) => {
       console.error('Supabase delete user error:', error);
       return c.json({ error: error.message || 'Failed to delete user' }, 500);
     }
-    return c.json({ message: 'User deleted successfully' }, 204);
+    return c.json({ message: 'User deleted successfully' }, { status: 204 }); // Corrigido aqui
   } catch (error) {
     console.error('Error deleting user:', error);
     return c.json({ error: 'Internal server error' }, 500);

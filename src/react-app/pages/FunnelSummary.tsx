@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback } from 'react'; // Removido importação explícita de React
+import { useEffect, useState } from 'react'; // Removido importação explícita de React, useCallback
 import { useLocation, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { supabase } from '@/integrations/supabase/browserClient';
-import { FunnelResponse } from '@/shared/types'; // FunnelResponse ainda é usado
+import type { FunnelResponse } from '@/shared/types'; // Importado como tipo
 import { funnelSteps } from '@/react-app/pages/Funnel';
 import { Check, Star } from 'lucide-react';
 

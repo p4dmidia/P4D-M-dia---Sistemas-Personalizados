@@ -159,7 +159,6 @@ internalDocuments.put(
     try {
       let query = supabase.from('internal_documents').update({ ...updateData, updated_at: new Date().toISOString() }).eq('id', documentId);
 
-      // RLS for internal_documents already checks project owner, so we can rely on that
       // If admin, bypass RLS by using supabaseAdmin
       if (userRole === 'admin') {
         query = c.get('supabaseAdmin').from('internal_documents').update({ ...updateData, updated_at: new Date().toISOString() }).eq('id', documentId);
@@ -197,7 +196,7 @@ internalDocuments.delete('/:id', adminOnly, async (c) => {
       console.error('Supabase delete internal document error:', error);
       return c.json({ error: error.message || 'Failed to delete internal document' }, 500);
     }
-    return c.json({ message: 'Internal document deleted successfully' }, 204);
+    return c.json({ message: 'Internal document deleted successfully' }, { status: 204 }); // Corrigido aqui
   } catch (error) {
     console.error('Error deleting internal document:', error);
     return c.json({ error: 'Internal server error' }, 500);

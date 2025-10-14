@@ -197,7 +197,7 @@ tasks.delete('/:id', adminOnly, async (c) => {
       console.error('Supabase delete task error:', error);
       return c.json({ error: error.message || 'Failed to delete task' }, 500);
     }
-    return c.json({ message: 'Task deleted successfully' }, 204);
+    return c.json({ message: 'Task deleted successfully' }, { status: 204 }); // Corrigido aqui
   } catch (error) {
     console.error('Error deleting task:', error);
     return c.json({ error: 'Internal server error' }, 500);

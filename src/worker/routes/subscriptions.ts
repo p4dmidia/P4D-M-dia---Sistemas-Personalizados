@@ -66,7 +66,7 @@ const adminOnly = async (c: any, next: any) => {
 subscriptions.post(
   '/',
   adminOnly, // Only admins can manually create subscriptions via API
-  zValidator('json', SubscriptionSchema.omit({ id: true, created_at: true, updated_at: true })), // Removido asaas_subscription_id
+  zValidator('json', SubscriptionSchema.omit({ id: true, created_at: true, updated_at: true })),
   async (c) => {
     const subscriptionData = c.req.valid('json');
     const supabaseAdmin = c.get('supabaseAdmin');
@@ -143,7 +143,7 @@ subscriptions.get('/:id', async (c) => {
 subscriptions.put(
   '/:id',
   adminOnly, // For full updates, require admin
-  zValidator('json', SubscriptionSchema.partial().omit({ id: true, user_id: true, created_at: true })), // Removido asaas_subscription_id
+  zValidator('json', SubscriptionSchema.partial().omit({ id: true, user_id: true, created_at: true })),
   async (c) => {
     const subscriptionId = c.req.param('id');
     const updateData = c.req.valid('json');
@@ -187,7 +187,7 @@ subscriptions.delete('/:id', adminOnly, async (c) => {
       console.error('Supabase delete subscription error:', error);
       return c.json({ error: error.message || 'Failed to delete subscription' }, 500);
     }
-    return c.json({ message: 'Subscription deleted successfully' }, 204);
+    return c.json({ message: 'Subscription deleted successfully' }, { status: 204 }); // Corrigido aqui
   } catch (error) {
     console.error('Error deleting subscription:', error);
     return c.json({ error: 'Internal server error' }, 500);
