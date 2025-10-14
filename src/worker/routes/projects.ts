@@ -164,8 +164,8 @@ projects.put(
       let query = supabase.from('projects').update({ ...updateData, updated_at: new Date().toISOString() }).eq('id', projectId);
 
       // If not admin, ensure user is the owner
-      if (userRole !== 'admin') {
-        query = query.eq('user_id', userId);
+      if (userRole === 'admin') {
+        query = c.get('supabaseAdmin').from('projects').update({ ...updateData, updated_at: new Date().toISOString() }).eq('id', projectId);
       }
 
       const { data, error } = await query.select().single();
@@ -200,7 +200,7 @@ projects.delete('/:id', adminOnly, async (c) => {
       console.error('Supabase delete project error:', error);
       return c.json({ error: error.message || 'Failed to delete project' }, 500);
     }
-    return c.json({ message: 'Project deleted successfully' }, 204); // Corrigido aqui
+    return c.body(null, 204); // Corrigido aqui: Usar c.body(null, 204) para 204 No Content
   } catch (error: any) {
     console.error('Error deleting project:', error);
     return c.json({ error: 'Internal server error' }, 500);

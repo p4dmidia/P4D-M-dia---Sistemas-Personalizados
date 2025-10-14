@@ -229,7 +229,7 @@ profiles.delete('/:id', adminOnly, async (c) => {
       console.error('Supabase delete user error:', error);
       return c.json({ error: error.message || 'Failed to delete user' }, 500);
     }
-    return c.json({ message: 'User deleted successfully' }, 204); // Corrigido aqui
+    return c.body(null, 204); // Corrigido aqui: Usar c.body(null, 204) para 204 No Content
   } catch (error) {
     console.error('Error deleting user:', error);
     return c.json({ error: 'Internal server error' }, 500);
