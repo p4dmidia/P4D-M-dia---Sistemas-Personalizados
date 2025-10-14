@@ -1,4 +1,4 @@
-import { MessageCircle, Mail, MapPin } from 'lucide-react'; // Adicionado Mail e MapPin
+import { MessageCircle, Mail, MapPin, Instagram, Linkedin, Youtube } from 'lucide-react'; // Adicionado Instagram, Linkedin, Youtube
 
 export default function Contato() {
   const handleWhatsAppClick = () => {
