@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from 'react'; // Removido importação explícita de React
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { ChevronLeft, FileText, DollarSign, Edit, Trash2, PlusCircle } from 'lucide-react';
-import { Project, Subscription } => '@/shared/types';
+import { Project, Subscription } from '@/shared/types'; // Linha corrigida aqui
 import { supabase } from '@/integrations/supabase/browserClient';
 import EditProjectModal from '@/react-app/components/admin/EditProjectModal';
 import CreateProjectModal from '@/react-app/components/admin/CreateProjectModal'; // Importar o novo modal
@@ -225,7 +225,7 @@ export default function AdminProjectsSubscriptionsPage() {
   };
 
   const handleEditSubscription = (subscriptionId: string) => {
-    toast(`Editar assinatura ${subscriptionId} (funcionalidade em breve!)`); // Alterado de toast.info para toast
+    toast(`Editar assinatura ${subscriptionId} (funcionalidade em breve!)`);
   };
 
   const handleDeleteSubscription = async (subscriptionId: string) => {
