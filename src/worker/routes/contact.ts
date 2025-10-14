@@ -1,7 +1,8 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
-import { SupabaseClient } from '@supabase/supabase-js'; // Adicionado import
+import { SupabaseClient } from '@supabase/supabase-js';
+import { Resend } from 'npm:resend@^3'; // Importar Resend
 
 // Define o schema para validação dos dados do formulário de contato
 const ContactFormSchema = z.object({
@@ -14,9 +15,7 @@ const ContactFormSchema = z.object({
 });
 
 type Bindings = {
-  // Se você for usar um serviço de e-mail real (ex: SendGrid, Mailgun),
-  // a chave da API seria configurada aqui nas variáveis de ambiente do worker.
-  // Ex: EMAIL_SERVICE_API_KEY?: string;
+  RESEND_API_KEY: string; // Adicionado a chave da API do Resend
 };
 
 type Variables = {
@@ -34,47 +33,40 @@ contact.post(
   async (c) => {
     const { name, email, phone, company, message, recipientEmail } = c.req.valid('json');
 
-    // Em uma aplicação real, você integraria com um serviço de envio de e-mail aqui.
-    // Por enquanto, vamos apenas registrar o conteúdo do e-mail no console do worker.
-    console.log('--- NOVA SUBMISSÃO DE FORMULÁRIO DE CONTATO ---');
-    console.log(`Destinatário: ${recipientEmail}`);
-    console.log(`De: ${name} <${email}>`);
-    console.log(`Telefone: ${phone || 'N/A'}`);
-    console.log(`Empresa: ${company || 'N/A'}`);
-    console.log(`Mensagem:\n${message}`);
-    console.log('-----------------------------------------------');
-
-    // Exemplo conceitual de como você faria uma chamada a um serviço de e-mail externo:
-    /*
-    const emailServiceApiKey = c.env.EMAIL_SERVICE_API_KEY;
-    if (!emailServiceApiKey) {
-      console.error('EMAIL_SERVICE_API_KEY não está configurada.');
+    const resendApiKey = c.env.RESEND_API_KEY;
+    if (!resendApiKey) {
+      console.error('RESEND_API_KEY não está configurada.');
       return c.json({ error: 'Serviço de e-mail não configurado' }, 500);
     }
 
-    const sendEmailResponse = await fetch('https://api.emailservice.com/send', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${emailServiceApiKey}`,
-      },
-      body: JSON.stringify({
-        to: recipientEmail,
-        from: 'noreply@seusite.com', // Substitua pelo seu e-mail de remetente verificado
-        subject: `Nova Mensagem de Contato de ${name}`,
-        text: `Nome: ${name}\nEmail: ${email}\nTelefone: ${phone || 'N/A'}\nEmpresa: ${company || 'N/A'}\nMensagem:\n${message}`,
-        html: `<p><strong>Nome:</strong> ${name}</p><p><strong>Email:</strong> ${email}</p><p><strong>Telefone:</strong> ${phone || 'N/A'}</p><p><strong>Empresa:</strong> ${company || 'N/A'}</p><p><strong>Mensagem:</strong></p><p>${message.replace(/\n/g, '<br>')}</p>`,
-      }),
-    });
+    const resend = new Resend(resendApiKey);
 
-    if (!sendEmailResponse.ok) {
-      const errorData = await sendEmailResponse.json();
-      console.error('Falha ao enviar e-mail:', errorData);
-      return c.json({ error: 'Falha ao enviar e-mail', details: errorData }, 500);
+    try {
+      const { data, error } = await resend.emails.send({
+        from: 'P4D Mídia <onboarding@resend.dev>', // IMPORTANTE: Substitua por um e-mail verificado no Resend!
+        to: [recipientEmail],
+        subject: `Nova Mensagem de Contato de ${name} - P4D Mídia`,
+        html: `
+          <p><strong>Nome:</strong> ${name}</p>
+          <p><strong>Email:</strong> ${email}</p>
+          <p><strong>Telefone:</strong> ${phone || 'N/A'}</p>
+          <p><strong>Empresa:</strong> ${company || 'N/A'}</p>
+          <p><strong>Mensagem:</strong></p>
+          <p>${message.replace(/\n/g, '<br>')}</p>
+        `,
+      });
+
+      if (error) {
+        console.error('Falha ao enviar e-mail com Resend:', error);
+        return c.json({ error: 'Falha ao enviar e-mail', details: error.message }, 500);
+      }
+
+      console.log('E-mail enviado com sucesso via Resend:', data);
+      return c.json({ message: 'Mensagem enviada com sucesso!' }, 200);
+    } catch (error) {
+      console.error('Erro inesperado ao enviar e-mail:', error);
+      return c.json({ error: 'Erro interno do servidor ao enviar e-mail' }, 500);
     }
-    */
-
-    return c.json({ message: 'Mensagem enviada com sucesso!' }, 200);
   }
 );
 
