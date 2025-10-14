@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react'; // Removido importação explícita de React
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { supabase } from '@/integrations/supabase/browserClient';
 import { LogOut, UserCircle, Check, X, Settings, MessageCircle, Calendar, FileText, Code, Search, DollarSign, TrendingUp, Sparkles, Hourglass, Info, LayoutDashboard } from 'lucide-react';
 import Confetti from 'react-confetti';
-import { Project, Subscription, FunnelResponse } from '@/shared/types'; // Import types
-import { User } from '@supabase/supabase-js'; // Import Supabase User type
+import { Project, Subscription, FunnelResponse } from '@/shared/types';
+import { User } from '@supabase/supabase-js';
 
 // Define project status mapping for progress and icons
 const projectStatusMap = {
@@ -27,7 +27,7 @@ const timelineSteps = [
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [userProfile, setUserProfile] = useState<{ id?: string; first_name?: string; last_name?: string; email?: string; avatar_url?: string; role?: string; stripe_customer_id?: string } | null>(null); // Adicionado id e stripe_customer_id
+  const [userProfile, setUserProfile] = useState<{ id?: string; first_name?: string; last_name?: string; email?: string; avatar_url?: string; role?: string; stripe_customer_id?: string } | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [funnelResponse, setFunnelResponse] = useState<FunnelResponse | null>(null);
@@ -49,7 +49,6 @@ export default function Dashboard() {
       if (!user) {
         const { data: { user: authUser }, error: userError } = await supabase.auth.getUser();
         if (userError || !authUser) {
-          // Este caso deve ser tratado pelo ProtectedRoute
           navigate('/login');
           return;
         }
@@ -59,7 +58,7 @@ export default function Dashboard() {
       // Buscar perfil
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('first_name, last_name, avatar_url, stripe_customer_id, role') // Alterado para stripe_customer_id
+        .select('first_name, last_name, avatar_url, stripe_customer_id, role')
         .eq('id', user.id)
         .single();
 
@@ -68,7 +67,6 @@ export default function Dashboard() {
         toast.error('Erro ao carregar dados do perfil.');
       } else if (profile) {
         setUserProfile({ ...profile, id: user.id, email: user.email });
-        // O redirecionamento de admin foi removido, o ProtectedRoute lida com isso
       } else {
         setUserProfile({ id: user.id, first_name: user.user_metadata.first_name || user.email?.split('@')[0], email: user.email, role: 'client' });
       }
@@ -112,32 +110,30 @@ export default function Dashboard() {
         console.error('Erro ao buscar assinaturas:', subscriptionsError);
         toast.error('Erro ao carregar assinaturas.');
       } else {
-        // Verificar se um novo plano ativo foi definido (ex: após um pagamento bem-sucedido)
-        // 'subscriptions' aqui se refere ao estado *antes* desta atualização
         const previousHasActivePlan = subscriptions.some(sub => sub.status === 'active');
         const currentHasActivePlan = (subscriptionsData || []).some(sub => sub.status === 'active');
         
-        setSubscriptions(subscriptionsData || []); // Atualizar o estado *após* a comparação
+        setSubscriptions(subscriptionsData || []);
 
         if (!previousHasActivePlan && currentHasActivePlan) {
           setShowConfetti(true);
-          setTimeout(() => setShowConfetti(false), 5000); // Esconder confetes após 5 segundos
+          setTimeout(() => setShowConfetti(false), 5000);
         }
       }
     } catch (error) {
       console.error('Erro inesperado ao carregar dashboard:', error);
       toast.error('Ocorreu um erro inesperado ao carregar o painel.');
     } finally {
-      setLoading(false); // Garantir que o loading seja sempre definido como false
+      setLoading(false);
     }
-  }, [navigate, subscriptions]); // Adicionado subscriptions às dependências
+  }, [navigate]); // Removido 'subscriptions' das dependências
 
   useEffect(() => {
     fetchDashboardData();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
-        fetchDashboardData(session.user); // Passar o usuário diretamente
+        fetchDashboardData(session.user);
       } else {
         setUserProfile(null);
         setProjects([]);
@@ -176,14 +172,12 @@ export default function Dashboard() {
   };
 
   const handleActivatePlan = () => {
-    // Isso idealmente navegaria para uma página de checkout ou diretamente para o Stripe
-    // Por enquanto, vamos navegar para o resumo do funil onde os planos são listados.
     navigate('/funnel/summary');
     toast('Redirecionando para a seleção de planos...');
   };
 
   const handleManagePayment = async () => {
-    if (!userProfile?.stripe_customer_id || !userProfile?.email || !userProfile?.id) { // Alterado para userProfile.id
+    if (!userProfile?.stripe_customer_id || !userProfile?.email || !userProfile?.id) {
       toast.error('Dados do cliente Stripe não encontrados. Por favor, entre em contato com o suporte.', { id: 'stripePortal' });
       return;
     }
@@ -191,17 +185,15 @@ export default function Dashboard() {
     setLoading(true);
     toast.loading('Redirecionando para o portal do cliente Stripe...', { id: 'stripePortal' });
     try {
-      // Chamar a Supabase Edge Function para criar uma sessão do portal do cliente Stripe
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-portal-session`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // Não é necessário Authorization header aqui, a função Edge lida com a autenticação
         },
         body: JSON.stringify({
           customerId: userProfile.stripe_customer_id,
-          userId: userProfile.id, // Passar userId para verificação na Edge Function
-          return_url: window.location.href, // Retorna para o dashboard após gerenciar
+          userId: userProfile.id,
+          return_url: window.location.href,
         }),
       });
 
@@ -225,7 +217,6 @@ export default function Dashboard() {
 
   const handleChangePlan = () => {
     toast('Redirecionando para a página de troca de planos (funcionalidade em breve)!');
-    // Redirecionar para uma página de seleção de planos
   };
 
   const confirmCancelSubscription = (subscriptionId: string) => {
@@ -244,11 +235,7 @@ export default function Dashboard() {
     toast.loading('Cancelando assinatura...', { id: 'cancelToast' });
 
     try {
-      // Não há uma função Edge específica para cancelar, o portal do cliente Stripe é a forma preferida.
-      // Se o usuário cancelar pelo portal, o webhook 'customer.subscription.deleted' irá atualizar o DB.
-      // Para um cancelamento direto via API, precisaríamos de uma Edge Function dedicada.
-      // Por enquanto, vamos redirecionar para o portal para que o usuário cancele por lá.
-      await handleManagePayment(); // Redireciona para o portal onde o usuário pode cancelar
+      await handleManagePayment();
       toast.success('Redirecionando para o portal do cliente para gerenciar sua assinatura.', { id: 'cancelToast' });
 
     } catch (error: any) {
@@ -262,7 +249,7 @@ export default function Dashboard() {
 
   const handleWhatsAppSupport = () => {
     const message = encodeURIComponent('Olá, preciso de suporte com meu projeto no P4D Studio!');
-    const phoneNumber = '5511999999999'; // Substitua pelo número real do WhatsApp
+    const phoneNumber = '5511999999999';
     window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
   };
 
@@ -470,7 +457,7 @@ export default function Dashboard() {
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-gray-300">Método de Pagamento:</span>
-                      <span className="text-white font-semibold">Cartão de Crédito (Stripe)</span> {/* Alterado para Stripe */}
+                      <span className="text-white font-semibold">Cartão de Crédito (Stripe)</span>
                     </div>
                     <div className="flex flex-col gap-3 mt-6">
                       <button
@@ -576,10 +563,8 @@ export default function Dashboard() {
                         </h4>
                         <time className="block mb-2 text-sm font-normal leading-none text-gray-500">
                           {currentProject?.created_at && index === 0 ? `Iniciado em ${new Date(currentProject.created_at).toLocaleDateString('pt-BR')}` : ''}
-                          {/* Adicionar datas dinâmicas para outras etapas se disponíveis nos dados do projeto */}
                         </time>
                         <p className="text-base font-normal text-gray-400">
-                          {/* Descrição dinâmica baseada na etapa */}
                           {step.id === 'briefing_received' && 'Seu briefing foi recebido e está em análise inicial.'}
                           {step.id === 'development_started' && 'Nossa equipe iniciou o desenvolvimento do seu sistema.'}
                           {step.id === 'internal_review' && 'O sistema está em fase de testes e revisão interna.'}
@@ -602,7 +587,6 @@ export default function Dashboard() {
                   <Calendar className="w-6 h-6 text-orange-400" /> Atualizações do Projeto
                 </h3>
                 <div className="space-y-6">
-                  {/* Dados Mock para Atualizações */}
                   <div className="flex items-start gap-4">
                     <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white">
                       P4D
@@ -636,7 +620,6 @@ export default function Dashboard() {
                       <span className="text-sm text-gray-500">05/10/2024 14:15</span>
                     </div>
                   </div>
-                  {/* Fim dos Dados Mock */}
                 </div>
               </div>
 
@@ -717,8 +700,7 @@ export default function Dashboard() {
               </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
     </div>
   );
 }
