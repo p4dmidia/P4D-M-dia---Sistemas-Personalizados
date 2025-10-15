@@ -11,6 +11,7 @@ export default defineConfig({
     allowedHosts: true,
   },
   build: {
+    outDir: 'client', // Adicionado: Define a pasta de saída da build para 'client'
     chunkSizeWarningLimit: 5000,
   },
   resolve: {
