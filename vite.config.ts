@@ -5,21 +5,17 @@ import { cloudflare } from "@cloudflare/vite-plugin";
 import { mochaPlugins } from "@getmocha/vite-plugins";
 
 export default defineConfig({
-  root: '.', // Define explicitamente a raiz do projeto
-  base: '/', // Garante que os caminhos dos assets sejam resolvidos a partir da raiz
+  root: '.', // Mantém a raiz do projeto explícita
+  base: '/', // Mantém os caminhos dos assets a partir da raiz
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   plugins: [...mochaPlugins(process.env as any), react(), cloudflare()],
   server: {
     allowedHosts: true,
   },
   build: {
-    outDir: 'client',
+    outDir: 'client', // Mantém a pasta de saída como 'client'
     chunkSizeWarningLimit: 5000,
-    rollupOptions: {
-      input: {
-        main: path.resolve(__dirname, 'index.html') // Define explicitamente index.html como ponto de entrada
-      }
-    }
+    // Removido: rollupOptions.input, que estava causando o erro
   },
   resolve: {
     alias: {
