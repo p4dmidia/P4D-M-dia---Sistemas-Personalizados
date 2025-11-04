@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react'; // Removido importação explícita de React
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import FunnelProgressBar from '@/react-app/components/FunnelProgressBar';
@@ -123,10 +123,13 @@ export default function Funnel() {
         currentFunnelId = localStorage.getItem('anonymous_funnel_id');
       }
 
+      // Garante que userId é string | null para o payload do banco de dados
+      const userIdForDb = userId || null;
+
       if (currentFunnelId) {
         // Atualizar resposta do funil existente
         const updatePayload = {
-          user_id: userId, // Pode ser null para anônimo
+          user_id: userIdForDb, // Pode ser null para anônimo
           step_data: dataToSave,
           current_step: step,
           completed: completed,
@@ -141,7 +144,7 @@ export default function Funnel() {
       } else {
         // Inserir nova resposta do funil
         const insertPayload = {
-          user_id: userId, // Pode ser null para anônimo
+          user_id: userIdForDb, // Pode ser null para anônimo
           step_data: dataToSave,
           current_step: step,
           completed: completed,
