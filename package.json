@@ -43,10 +43,11 @@
     "wrangler": "^4.33.0"
   },
   "scripts": {
-    "build": "npm run cf-typegen && tsc -b && vite build",
-    "cf-typegen": "wrangler types",
-    "check": "tsc && vite build && wrangler deploy --dry-run",
+    "build": "vite build",
+    "build:vercel": "vite --config vite.config.vercel.ts build",
+    "check": "tsc && vite build",
     "dev": "vite",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "preview": "vite preview"
   }
 }
