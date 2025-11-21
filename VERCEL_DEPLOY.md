@@ -6,12 +6,17 @@ O erro do Cloudflare foi resolvido! O build agora usa apenas o Vite puro sem dep
 
 ## Configuração
 
-### 1. Variáveis de Ambiente
-Configure as seguintes variáveis no painel da Vercel:
+### 1. Variáveis de Ambiente ⚠️ IMPORTANTE
+**NÃO use o símbolo @ nas variáveis!** Configure diretamente os valores:
 
-- `vite_supabase_url`: URL do seu projeto Supabase
-- `vite_supabase_anon_key`: Chave anônima do Supabase
-- `vite_stripe_public_key`: Chave pública do Stripe (se usar pagamentos)
+No painel da Vercel, vá em Settings → Environment Variables e adicione:
+
+- `VITE_SUPABASE_URL`: `https://vmhqgniynjkiyuuqfdzb.supabase.co`
+- `VITE_SUPABASE_ANON_KEY`: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZtaHFnbml5bmpraXl1dXFmZHpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2ODI4MTIsImV4cCI6MjA3OTI1ODgxMn0.Vh-39UY-LwJiXbt3Ip6INledlB-A3bF_IXcuRQmp7LY`
+- `VITE_STRIPE_PUBLIC_KEY`: `pk_live_51RinlxJ3MwT8QUClSzFDP118N8DJqQXm0MQrM2qUyqBCCartnZ3hEjbii8GYWU6REaprd4obtBk8FZcwFORLxUqs00ZMmfWLvS`
+
+**❌ ERRADO**: Usar `@vite_supabase_url` (com @)
+**✅ CERTO**: Colocar o valor direto (sem @)
 
 ### 2. Build
 O projeto usa Vite com React. O comando de build é:

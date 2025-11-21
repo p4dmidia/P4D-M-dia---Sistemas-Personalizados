@@ -4,7 +4,8 @@ import react from "@vitejs/plugin-react";
 
 // Configuração limpa para Vercel sem Cloudflare
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), '');
+  // Carregar variáveis de ambiente do arquivo .env.production se existir
+  const env = loadEnv(mode, process.cwd(), 'VITE_');
   
   return {
     plugins: [react()],
@@ -29,12 +30,6 @@ export default defineConfig(({ mode }) => {
       alias: {
         "@": path.resolve(__dirname, "./src"),
       },
-    },
-    // Definir apenas variáveis específicas
-    define: {
-      __VITE_SUPABASE_URL__: JSON.stringify(env.VITE_SUPABASE_URL || ''),
-      __VITE_SUPABASE_ANON_KEY__: JSON.stringify(env.VITE_SUPABASE_ANON_KEY || ''),
-      __VITE_STRIPE_PUBLIC_KEY__: JSON.stringify(env.VITE_STRIPE_PUBLIC_KEY || ''),
     }
   };
 });
