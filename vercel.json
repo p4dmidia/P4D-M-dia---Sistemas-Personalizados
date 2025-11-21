@@ -1,13 +1,13 @@
 {
   "version": 2,
-  "buildCommand": "npm run build:vercel",
+  "buildCommand": "npm run build:vercel-clean",
   "outputDirectory": "dist/client",
   "installCommand": "npm install",
   "framework": "vite",
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/api/$1"
+      "destination": "/index.html"
     },
     {
       "source": "/(.*)",
@@ -18,10 +18,5 @@
     "VITE_SUPABASE_URL": "@vite_supabase_url",
     "VITE_SUPABASE_ANON_KEY": "@vite_supabase_anon_key",
     "VITE_STRIPE_PUBLIC_KEY": "@vite_stripe_public_key"
-  },
-  "functions": {
-    "api/**/*.js": {
-      "runtime": "nodejs18.x"
-    }
   }
 }

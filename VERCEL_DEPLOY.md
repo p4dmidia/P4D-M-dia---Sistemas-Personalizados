@@ -1,5 +1,9 @@
 # Deploy na Vercel
 
+## ✅ Configuração Corrigida
+
+O erro do Cloudflare foi resolvido! O build agora usa apenas o Vite puro sem dependências do Cloudflare.
+
 ## Configuração
 
 ### 1. Variáveis de Ambiente
@@ -17,20 +21,38 @@ npm run build:vercel
 
 ### 3. Estrutura
 - Frontend: React + TypeScript + Vite
-- Backend: Cloudflare Workers (será adaptado para Vercel Functions)
 - Build output: `dist/client`
+- Configuração limpa: Sem Cloudflare Workers
 
 ### 4. Rotas
 - SPA: Todas as rotas são redirecionadas para `index.html`
-- API: Rotas `/api/*` serão processadas por Vercel Functions
+- Frontend apenas: APIs serão tratadas separadamente
+
+## Arquivos de Configuração
+
+- `vercel.json` - Configuração do Vercel
+- `vite.config.prod.ts` - Configuração limpa do Vite para produção
+- `.env.example` - Exemplo de variáveis de ambiente
+
+## Build Testado ✅
+
+O build foi testado localmente e funcionou sem erros:
+```
+vite v7.1.9 building for production...
+✓ 1752 modules transformed.
+dist/client/assets/...
+✓ built in 5.55s
+```
 
 ## Notas Importantes
 
-1. **Backend**: Este projeto foi originalmente configurado para Cloudflare Workers. Para deploy na Vercel, você pode:
-   - Usar Vercel Functions (recomendado)
-   - Manter Cloudflare Workers como backend separado
-   - Migrar para serverless functions da Vercel
+1. **Frontend Only**: Este deploy é apenas para o frontend React
+2. **Backend**: O backend original em Cloudflare Workers deve ser mantido separado
+3. **Supabase**: Certifique-se de configurar as políticas RLS no Supabase para produção
+4. **APIs**: Configure CORS no Supabase para aceitar requisições do domínio Vercel
 
-2. **Supabase**: Certifique-se de configurar as políticas RLS no Supabase para produção
+## Deploy
 
-3. **Stripe**: Configure os webhooks apropriados para o ambiente de produção
+1. Conecte seu repositório no painel da Vercel
+2. Configure as variáveis de ambiente
+3. O build será executado automaticamente
