@@ -6,7 +6,15 @@ O erro do Cloudflare foi resolvido! O build agora usa apenas o Vite puro sem dep
 
 ## Configuração
 
-### 1. Variáveis de Ambiente ⚠️ IMPORTANTE
+### 1. Configuração do Package Manager ⚠️ IMPORTANTE
+O projeto usa **pnpm** e precisa ser configurado corretamente:
+
+**No painel da Vercel:**
+1. Vá em Settings → General → Package Manager
+2. Selecione **pnpm** como package manager
+3. **OU** adicione a variável: `PACKAGE_MANAGER = pnpm`
+
+### 2. Variáveis de Ambiente ⚠️ IMPORTANTE
 **NÃO use o símbolo @ nas variáveis!** Configure diretamente os valores:
 
 No painel da Vercel, vá em Settings → Environment Variables e adicione:

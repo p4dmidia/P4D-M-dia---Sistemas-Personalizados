@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "buildCommand": "npm run build:vercel-clean",
+  "buildCommand": "pnpm run build:vercel-clean",
   "outputDirectory": "dist/client",
-  "installCommand": "npm install",
+  "installCommand": "pnpm install",
   "framework": "vite",
   "rewrites": [
     {

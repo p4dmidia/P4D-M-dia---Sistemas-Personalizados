@@ -1,0 +1,13 @@
+# Configuração para Vercel Deploy
+
+## Variáveis de Ambiente para Vercel
+
+VITE_SUPABASE_URL=https://vmhqgniynjkiyuuqfdzb.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZtaHFnbml5bmpraXl1dXFmZHpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2ODI4MTIsImV4cCI6MjA3OTI1ODgxMn0.Vh-39UY-LwJiXbt3Ip6INledlB-A3bF_IXcuRQmp7LY
+VITE_STRIPE_PUBLIC_KEY=pk_live_51RinlxJ3MwT8QUClSzFDP118N8DJqQXm0MQrM2qUyqBCCartnZ3hEjbii8GYWU6REaprd4obtBk8FZcwFORLxUqs00ZMmfWLvS
+
+## Comandos de Build
+
+Build: pnpm run build:vercel-clean
+Install: pnpm install
+Framework: Vite
